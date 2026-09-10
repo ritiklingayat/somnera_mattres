@@ -1,4 +1,7 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawBase = (import.meta.env.VITE_API_URL || '/api').trim().replace(/\/+$/, '');
+const BASE_URL = rawBase.startsWith('http') && !rawBase.endsWith('/api')
+  ? `${rawBase}/api`
+  : rawBase;
 const TOKEN_KEY = 'somnera_auth_token';
 
 export async function apiRequest(endpoint, options = {}) {
