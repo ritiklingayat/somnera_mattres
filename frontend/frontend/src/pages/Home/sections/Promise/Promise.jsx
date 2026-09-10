@@ -1,0 +1,2 @@
+import './Promise.css';
+export default function Promise(){return <section id="promise" className="promise"><div className="container promise-inner"><div><span className="section-kicker">The Somnera promise</span><h2>Rest easy.<br /><em>We’ve got you.</em></h2></div><div className="promise-points"><div><strong>10</strong><span>years of warranty<br />on select ranges</span></div><div><strong>5</strong><span>signature sleep<br />collections</span></div><div><strong>1</strong><span>uncompromising<br />standard of quality</span></div></div></div></section>}

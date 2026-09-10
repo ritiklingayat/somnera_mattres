@@ -1,0 +1,58 @@
+.floating-social-dock {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 990;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.social-floating-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 25px rgba(37, 20, 58, 0.2);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, filter 0.25s ease;
+  text-decoration: none;
+}
+
+.social-floating-btn:hover {
+  transform: scale(1.1);
+  filter: saturate(1.08);
+  box-shadow: 0 14px 30px rgba(37, 20, 58, 0.28);
+}
+
+.social-floating-btn:focus-visible {
+  outline: 3px solid #6c31da;
+  outline-offset: 3px;
+}
+
+.instagram-floating-btn {
+  background: radial-gradient(circle at 31% 105%, #fdf497 0 6%, #fd5949 39%, #d6249f 62%, #285aeb 100%);
+}
+
+.whatsapp-floating-btn {
+  background: #25d366;
+}
+
+@media (max-width: 768px) {
+  .floating-social-dock {
+    right: 18px;
+    bottom: 78px; /* Lift above bottom dock on mobile viewports */
+    gap: 10px;
+  }
+  .social-floating-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .social-floating-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+}

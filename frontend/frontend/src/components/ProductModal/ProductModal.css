@@ -1,0 +1,148 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  padding: 24px;
+  background: rgba(19, 10, 25, 0.76);
+  display: grid;
+  place-items: center;
+}
+.product-modal {
+  position: relative;
+  background: var(--paper);
+  width: min(930px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: auto;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+.modal-image {
+  min-height: 440px;
+}
+.modal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.modal-content {
+  padding: 47px 50px 34px;
+}
+.modal-close {
+  position: absolute;
+  right: 15px;
+  top: 12px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1.45rem;
+  z-index: 1;
+}
+.modal-kicker {
+  color: var(--gold);
+  font-size: 0.69rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+.modal-content h2 {
+  font: 600 3rem/0.95 var(--font-display);
+  margin-bottom: 13px;
+}
+.modal-description {
+  color: var(--muted);
+  line-height: 1.65;
+  margin-bottom: 19px;
+}
+.modal-stats {
+  display: flex;
+  gap: 22px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0;
+  margin-bottom: 19px;
+}
+.modal-stats span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.modal-stats b {
+  display: block;
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+.selector {
+  margin: 17px 0;
+}
+.selector label {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 800;
+  margin-bottom: 9px;
+}
+.selector button {
+  border: 1px solid var(--line);
+  background: white;
+  padding: 8px 13px;
+  margin-right: 6px;
+  font-size: 0.78rem;
+}
+.selector button.active {
+  background: var(--plum);
+  color: white;
+  border-color: var(--plum);
+}
+.selector select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--line);
+  background: white;
+}
+.price-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin: 24px 0 15px;
+}
+.price-row span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.price-row strong {
+  color: var(--plum);
+  font: 600 2rem var(--font-display);
+}
+.modal-button {
+  width: 100%;
+}
+.materials {
+  color: var(--muted);
+  font-size: 0.73rem;
+  line-height: 1.55;
+  margin: 17px 0 0;
+}
+.materials b {
+  color: var(--ink);
+}
+@media (max-width: 680px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+  .product-modal {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 20px);
+  }
+  .modal-image {
+    height: 220px;
+    min-height: 0;
+  }
+  .modal-content {
+    padding: 29px 25px 25px;
+  }
+  .modal-content h2 {
+    font-size: 2.5rem;
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "somnera-mattress-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Somnera Mattress Full-Stack E-Commerce Platform",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend/frontend",
+    "start:backend": "npm run start --prefix backend",
+    "test:backend": "npm run test --prefix backend",
+    "test:frontend": "npm run test --prefix frontend/frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "seed": "npm run seed --prefix backend",
+    "seed:admin": "npm run seed:admin --prefix backend",
+    "build": "npm run build --prefix frontend/frontend"
+  }
+}

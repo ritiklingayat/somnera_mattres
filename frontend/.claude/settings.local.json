@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(java -version)",
+      "Bash(mvn --version)",
+      "Bash(docker --version)",
+      "Bash(psql --version)",
+      "Read(//c/Program Files/**)",
+      "Bash(powershell -Command 'Get-Service | Where-Object {$_.Name -like '\\\\''*postgres*'\\\\'' -or $_.Name -like '\\\\''*sql*'\\\\''} | Select-Object Name,Status')"
+    ]
+  }
+}

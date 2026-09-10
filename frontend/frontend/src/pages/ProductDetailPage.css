@@ -1,0 +1,661 @@
+.product-detail-page {
+  padding: 24px 0 72px;
+}
+
+.product-breadcrumb {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.product-breadcrumb a {
+  color: var(--gold, #d3af5d);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.product-breadcrumb .breadcrumb-current {
+  color: #111827;
+  font-weight: 600;
+}
+
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.product-detail-image-wrap {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(31, 20, 44, 0.12);
+  border: 1px solid #eee;
+  background: #faf7f2;
+}
+
+.product-detail-image-wrap img,
+.product-detail-image-wrap video {
+  width: 100%;
+  display: block;
+  aspect-ratio: 1 / 0.95;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+.product-detail-image-wrap video {
+  background: #111;
+}
+
+.product-gallery-empty {
+  min-height: 420px;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  color: #716979;
+  text-align: center;
+}
+
+.product-gallery-empty span {
+  color: var(--gold, #d3af5d);
+  font-size: 3rem;
+}
+
+.product-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(36, 17, 50, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(31, 20, 44, 0.18);
+  color: #241132;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.product-gallery-arrow:hover,
+.product-gallery-arrow:focus-visible {
+  background: #241132;
+  color: #fff;
+}
+
+.product-gallery-arrow.previous {
+  left: 14px;
+}
+
+.product-gallery-arrow.next {
+  right: 14px;
+}
+
+.product-gallery-thumbnails {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 2px;
+  overflow-x: auto;
+}
+
+.product-gallery-thumbnails button {
+  position: relative;
+  flex: 0 0 84px;
+  height: 70px;
+  padding: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #f8f5ef;
+  cursor: pointer;
+}
+
+.product-gallery-thumbnails button:hover,
+.product-gallery-thumbnails button:focus-visible {
+  border-color: #b9a6c7;
+}
+
+.product-gallery-thumbnails button.active {
+  border-color: #241132;
+  box-shadow: 0 0 0 2px rgba(36, 17, 50, 0.08);
+}
+
+.product-gallery-thumbnails img,
+.product-gallery-thumbnails video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.product-video-thumbnail-icon {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(36, 17, 50, 0.86);
+  color: #fff;
+  font-size: 0.7rem;
+  transform: translate(-50%, -50%);
+}
+
+.product-detail-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: #241132;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  border-radius: 999px;
+}
+
+.product-detail-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold, #d3af5d);
+}
+
+.product-detail-title {
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  font-weight: 700;
+  margin: 10px 0 12px;
+  color: #1f142c;
+}
+
+.product-detail-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: #f59e0b;
+}
+
+.product-detail-rating strong {
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.product-detail-rating small {
+  color: #6b7280;
+}
+
+.product-detail-desc {
+  color: #4b5563;
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+
+.product-detail-specs-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  background: #f8f5ef;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+
+.product-detail-specs-box strong {
+  color: #1f142c;
+  font-size: 0.85rem;
+}
+
+.product-detail-specs-box span {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.product-detail-materials {
+  margin-bottom: 18px;
+}
+
+.product-detail-materials > strong {
+  display: block;
+  color: #1f142c;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.materials-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mat-tag {
+  background: #eef1f6;
+  color: #374151;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.quickview-option-row {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quickview-option-row label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1f142c;
+  min-width: 72px;
+}
+
+.thickness-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.thickness-pill {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.thickness-pill.active {
+  border-color: var(--gold, #d3af5d);
+  background: #fdf6e3;
+  color: #7a5a10;
+}
+
+.product-size-selector {
+  min-width: 0;
+  margin: 4px 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.product-size-selector legend {
+  margin-bottom: 10px;
+  color: #1f142c;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.product-size-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.product-size-options button {
+  min-width: 0;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 1px solid #d7dce5;
+  border-radius: 7px;
+  background: #f8f9fb;
+  color: #404752;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.product-size-options button strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.product-size-options button small {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.product-size-options .custom-size-option {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.product-size-options button:hover,
+.product-size-options button:focus-visible {
+  border-color: #241132;
+  transform: translateY(-1px);
+}
+
+.product-size-options button.active {
+  border-color: #68cf41;
+  background: #68cf41;
+  color: #fff;
+  box-shadow: 0 7px 18px rgba(75, 174, 40, 0.2);
+}
+
+.mattress-configurator {
+  margin: 10px 0 18px;
+  padding: 18px;
+  border: 1px solid #e0e4eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.mattress-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.mattress-config-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mattress-config-field > span,
+.product-size-selector legend {
+  color: #404752;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mattress-config-field select,
+.custom-dimension-inputs,
+.product-quantity-control {
+  width: 100%;
+  min-height: 56px;
+  border: 1px solid #dfe3ea;
+  border-radius: 7px;
+  background: #f8f9fb;
+  color: #111827;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.mattress-config-field select {
+  padding: 0 16px;
+  text-align: center;
+}
+
+.mattress-config-field select:disabled {
+  color: #111827;
+  cursor: default;
+  opacity: 1;
+}
+
+.custom-dimension-inputs,
+.product-quantity-control {
+  display: flex;
+  align-items: center;
+}
+
+.custom-dimension-inputs input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 12px;
+  text-align: center;
+  font: inherit;
+}
+
+.product-quantity-control {
+  justify-content: space-between;
+}
+
+.product-quantity-control button {
+  align-self: stretch;
+  width: 54px;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.product-quantity-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.product-quantity-control output {
+  font-weight: 700;
+}
+
+.accessory-size-selector,
+.accessory-quantity-row {
+  max-width: 360px;
+  margin: 10px 0 18px;
+}
+
+.accessory-quantity-row {
+  display: grid;
+  gap: 8px;
+}
+
+.accessory-quantity-row > span {
+  color: #404752;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pillow-pack-summary {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.config-error {
+  color: #b42318;
+}
+
+.custom-size-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #e0d9e4;
+  border-radius: 12px;
+  background: #faf8fb;
+}
+
+.custom-size-panel > strong {
+  color: #241132;
+  font-size: 0.9rem;
+}
+
+.custom-size-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.custom-size-inputs label {
+  display: grid;
+  gap: 6px;
+  color: #5e5663;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.custom-size-inputs input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #cfc6d3;
+  border-radius: 8px;
+  background: #fff;
+  color: #241132;
+  font: inherit;
+}
+
+.custom-size-panel p {
+  margin: 0;
+  color: #a33a3a;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.product-detail-price-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px dashed #ddd;
+  padding-top: 20px;
+  margin: 20px 0 24px;
+}
+
+.product-detail-price-row small {
+  display: block;
+  color: #6b7280;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+
+.price-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1f142c;
+}
+
+.original-price {
+  color: #9ca3af;
+  margin-left: 10px;
+  font-size: 1rem;
+}
+
+.discount-tag {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  margin-left: 8px;
+}
+
+.tax-inclusive-text {
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.product-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.quickview-add-btn {
+  border: none;
+  cursor: pointer;
+}
+
+.quickview-add-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.back-to-mattresses {
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.product-not-found {
+  text-align: center;
+  padding: 90px 20px;
+}
+
+.product-not-found-icon {
+  font-size: 3.4rem;
+  display: block;
+  margin-bottom: 14px;
+}
+
+.product-not-found h2 {
+  color: #1f142c;
+  margin: 0 0 8px;
+}
+
+.product-not-found p {
+  color: #6b7280;
+  margin: 0 0 22px;
+}
+
+@media (max-width: 768px) {
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .product-detail-specs-box {
+    grid-template-columns: 1fr;
+  }
+
+  .product-detail-page {
+    padding: 16px 0 48px;
+  }
+
+  .product-gallery-empty {
+    min-height: 300px;
+  }
+
+  .product-gallery-arrow {
+    width: 40px;
+    height: 40px;
+  }
+
+  .custom-size-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .mattress-config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .mattress-configurator {
+    padding: 14px;
+  }
+
+  .product-size-options {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .product-size-options .custom-size-option {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
