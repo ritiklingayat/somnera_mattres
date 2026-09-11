@@ -10,7 +10,7 @@ import { env } from '../src/config/env.js';
 import { razorpayService } from '../src/services/razorpay.service.js';
 import { emailService } from '../src/services/email.service.js';
 import { formatProduct } from '../src/modules/products/product.controller.js';
-import { formatCart } from '../src/modules/cart/cart.controller.js';
+import { formatCart, calculateProductUnitPrice } from '../src/modules/cart/cart.controller.js';
 import { requireRole } from '../src/middlewares/role.middleware.js';
 
 test('1. Health Check Endpoint', async () => {
@@ -315,6 +315,30 @@ test('19. Products API: GET /api/products returns products and supports slug loo
     assert.equal(resSingle.body.success, true);
     assert.equal(resSingle.body.data.id, firstProduct.id);
   }
+});
+
+test('20. Cart Price Calculation: Calculates mattress price based on dimensions and rate', () => {
+  const mattress = {
+    productType: 'MATTRESS',
+    prices: { '6': 310, '8': 370 },
+  };
+
+  // 72x60 (30 sq ft) at 310/sq ft = 9300
+  const price = calculateProductUnitPrice(mattress, '72x60', '6');
+  assert.equal(price, 9300);
+
+  // 78x72 (39 sq ft) at 370/sq ft = 14430
+  const priceKing = calculateProductUnitPrice(mattress, '78x72', '8');
+  assert.equal(priceKing, 14430);
+
+  // Non-mattress product falls back to offerPrice or price
+  const pillow = {
+    productType: 'PILLOW',
+    offerPrice: 569,
+    price: 899,
+  };
+  const pillowPrice = calculateProductUnitPrice(pillow);
+  assert.equal(pillowPrice, 569);
 });
 
 

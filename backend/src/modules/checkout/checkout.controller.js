@@ -2,6 +2,7 @@ import prisma from '../../config/prisma.js';
 import { razorpayService } from '../../services/razorpay.service.js';
 import { emailService } from '../../services/email.service.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
+import { calculateProductUnitPrice } from '../cart/cart.controller.js';
 
 export const initializeCheckout = async (req, res, next) => {
   try {
@@ -42,7 +43,9 @@ export const initializeCheckout = async (req, res, next) => {
         return sendError(res, `Insufficient stock for "${product.name}". Only ${product.stock} left.`, 400);
       }
 
-      const itemTotal = item.unitPrice * item.quantity;
+      const calculatedUnitPrice = calculateProductUnitPrice(product, item.size, item.thickness);
+      const unitPrice = calculatedUnitPrice > 0 ? calculatedUnitPrice : item.unitPrice;
+      const itemTotal = unitPrice * item.quantity;
       subtotal += itemTotal;
 
       orderItemsData.push({
@@ -54,7 +57,7 @@ export const initializeCheckout = async (req, res, next) => {
         thickness: item.thickness,
         packSize: item.packSize || 1,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        unitPrice,
         itemTotal,
       });
     }

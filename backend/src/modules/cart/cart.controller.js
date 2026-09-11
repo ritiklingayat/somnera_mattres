@@ -51,6 +51,32 @@ export const formatCart = (cart) => {
 };
 
 /**
+ * Calculate correct unit price for a product based on type and dimensions
+ */
+export const calculateProductUnitPrice = (product, size = '72x60', thickness = '6') => {
+  if (!product) return 0;
+
+  const isMattress = product.productType === 'MATTRESS' || product.productSection === 'MATTRESS';
+
+  if (isMattress && thickness && product.prices) {
+    const pricesMap = typeof product.prices === 'object' && product.prices ? product.prices : {};
+    const rate = Number(pricesMap[String(thickness)] ?? pricesMap[thickness] ?? 0);
+
+    if (rate > 0) {
+      const sizeStr = String(size || '72x60').toLowerCase();
+      const [lengthStr, widthStr] = sizeStr.split('x');
+      const length = Number(lengthStr) || 72;
+      const width = Number(widthStr) || 60;
+      const areaSqFt = (length * width) / 144;
+      return Math.round(areaSqFt * rate);
+    }
+  }
+
+  const basePrice = Number(product.offerPrice ?? product.sellingPrice ?? product.price ?? 0);
+  return Number.isFinite(basePrice) && basePrice > 0 ? basePrice : 500;
+};
+
+/**
  * Helper to get or create cart for user
  */
 const getOrCreateCart = async (userId) => {
@@ -81,6 +107,27 @@ const getOrCreateCart = async (userId) => {
         },
       },
     });
+    return cart;
+  }
+
+  // Auto-heal any existing cart items where price was stored as raw sq ft rate
+  if (cart.items && cart.items.length > 0) {
+    for (const item of cart.items) {
+      if (item.product) {
+        const correctUnitPrice = calculateProductUnitPrice(item.product, item.size, item.thickness);
+        if (correctUnitPrice > 0 && item.unitPrice !== correctUnitPrice) {
+          await prisma.cartItem.update({
+            where: { id: item.id },
+            data: {
+              unitPrice: correctUnitPrice,
+              itemTotal: correctUnitPrice * item.quantity,
+            },
+          });
+          item.unitPrice = correctUnitPrice;
+          item.itemTotal = correctUnitPrice * item.quantity;
+        }
+      }
+    }
   }
 
   return cart;
@@ -119,20 +166,8 @@ export const addToCart = async (req, res, next) => {
     const normalizedThickness = thickness == null ? '' : String(thickness);
     const qty = Math.max(1, parseInt(quantity, 10) || 1);
 
-    // Calculate unit price
-    let unitPrice = Number(product.offerPrice ?? product.sellingPrice ?? product.price ?? 0);
-    const isMattress = product.productType === 'MATTRESS' || product.productSection === 'MATTRESS';
-
-    if (isMattress && normalizedThickness && product.prices) {
-      const pricesMap = typeof product.prices === 'object' ? product.prices : {};
-      if (pricesMap[normalizedThickness] != null) {
-        unitPrice = Number(pricesMap[normalizedThickness]);
-      }
-    }
-
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-      unitPrice = Number(product.price || 500);
-    }
+    // Calculate proper unit price (e.g. Area * Rate for mattresses)
+    const unitPrice = calculateProductUnitPrice(product, normalizedSize, normalizedThickness);
 
     const cart = await getOrCreateCart(req.user.id);
 
@@ -195,11 +230,17 @@ export const updateCartItem = async (req, res, next) => {
       return sendError(res, 'Cart item not found.', 404);
     }
 
+    const correctUnitPrice = item.product
+      ? calculateProductUnitPrice(item.product, item.size, item.thickness)
+      : item.unitPrice;
+    const finalUnitPrice = correctUnitPrice > 0 ? correctUnitPrice : item.unitPrice;
+
     await prisma.cartItem.update({
       where: { id: item.id },
       data: {
         quantity: qty,
-        itemTotal: item.unitPrice * qty,
+        unitPrice: finalUnitPrice,
+        itemTotal: finalUnitPrice * qty,
       },
     });
 
