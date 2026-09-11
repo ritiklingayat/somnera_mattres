@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
+import { calculateProductUnitPrice } from '../cart/cart.controller.js';
 
 export const getAvailableCoupons = async (req, res, next) => {
   try {
@@ -47,7 +48,31 @@ export const applyCoupon = async (req, res, next) => {
       return sendError(res, 'This coupon has reached its maximum usage limit.', 400);
     }
 
-    const total = parseFloat(cartTotal) || 0;
+    let total = parseFloat(cartTotal) || 0;
+
+    // Fallback: If cartTotal wasn't sent or was 0, calculate from authenticated user's cart
+    if (total <= 0 && req.user?.id) {
+      const userCart = await prisma.cart.findUnique({
+        where: { userId: req.user.id },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (userCart && Array.isArray(userCart.items) && userCart.items.length > 0) {
+        total = userCart.items.reduce((sum, item) => {
+          const unitPrice = item.product
+            ? calculateProductUnitPrice(item.product, item.size, item.thickness)
+            : Number(item.unitPrice) || 0;
+          return sum + (unitPrice * (item.quantity || 1));
+        }, 0);
+      }
+    }
+
     if (coupon.minOrderAmount && total < coupon.minOrderAmount) {
       return sendError(
         res,
@@ -78,6 +103,7 @@ export const applyCoupon = async (req, res, next) => {
       },
       discountAmount,
       finalTotal,
+      subtotal: total,
     }, 'Coupon applied successfully.');
   } catch (error) {
     next(error);

@@ -2187,9 +2187,23 @@ const [
         );
 
 
+        const effectiveTotal =
+          Number(cartTotal) ||
+          (Array.isArray(cart?.items)
+            ? cart.items.reduce(
+                (sum, item) =>
+                  sum +
+                  (Number(item.itemTotal) ||
+                    Number(item.unitPrice) * Number(item.quantity) ||
+                    0),
+                0,
+              )
+            : 0);
+
         const result =
           await applyCouponApi(
             code,
+            effectiveTotal,
           );
 
 
@@ -2284,9 +2298,23 @@ const [
         );
 
 
+        const effectiveTotal =
+          Number(cartTotal) ||
+          (Array.isArray(cart?.items)
+            ? cart.items.reduce(
+                (sum, item) =>
+                  sum +
+                  (Number(item.itemTotal) ||
+                    Number(item.unitPrice) * Number(item.quantity) ||
+                    0),
+                0,
+              )
+            : 0);
+
         const result =
           await applyCouponApi(
             code,
+            effectiveTotal,
           );
 
 
@@ -2391,6 +2419,9 @@ const [
     Number(
       appliedCoupon
         ?.finalAmount ??
+      appliedCoupon
+        ?.finalTotal ??
+      (displaySubtotal - displayDiscount) ??
       cartTotal ??
       0,
     );
@@ -3934,21 +3965,16 @@ const [
                                     {' '}
 
                                     {
-                                      new Date(
-                                        `${coupon.expiryDate}T00:00:00`,
-                                      ).toLocaleDateString(
-                                        'en-IN',
-                                        {
-                                          day:
-                                            'numeric',
-
-                                          month:
-                                            'short',
-
-                                          year:
-                                            'numeric',
-                                        },
-                                      )
+                                      (() => {
+                                        const d = new Date(coupon.expiryDate);
+                                        return !isNaN(d.getTime())
+                                          ? d.toLocaleDateString('en-IN', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric',
+                                            })
+                                          : '';
+                                      })()
                                     }
 
                                   </small>

@@ -17,13 +17,22 @@ export async function getAvailableCouponsApi() {
 }
 
 export async function applyCouponApi(couponCode, cartTotal = 0) {
+  const numericCartTotal = Number(cartTotal) || 0;
   try {
-    const result = await api.post('/coupons/apply', { code: couponCode, cartTotal });
+    const result = await api.post('/coupons/apply', { code: couponCode, cartTotal: numericCartTotal });
     if (result?.coupon) {
+      const discountAmount = Number(result.discountAmount) || 0;
+      const finalTotal = Number(result.finalTotal ?? (numericCartTotal - discountAmount));
+      const subtotal = Number(result.subtotal ?? numericCartTotal);
       return {
         ...result.coupon,
-        discountAmount: result.discountAmount,
-        finalTotal: result.finalTotal,
+        couponCode: result.coupon.code,
+        code: result.coupon.code,
+        discountAmount,
+        finalTotal,
+        finalAmount: finalTotal,
+        subtotal,
+        message: 'Coupon applied successfully.',
       };
     }
   } catch (err) {
@@ -34,7 +43,23 @@ export async function applyCouponApi(couponCode, cartTotal = 0) {
     (item) => item.code === String(couponCode || '').trim().toUpperCase()
   );
   if (!coupon) throw new Error('Invalid or expired coupon.');
-  return coupon;
+  if (coupon.minOrderAmount && numericCartTotal < coupon.minOrderAmount) {
+    throw new Error(`This coupon requires a minimum cart total of ₹${coupon.minOrderAmount}.`);
+  }
+  const discountAmount = coupon.discountType === 'PERCENTAGE'
+    ? Math.round(((numericCartTotal * Number(coupon.discountValue)) / 100) * 100) / 100
+    : Number(coupon.discountValue);
+  const finalTotal = Math.max(0, numericCartTotal - discountAmount);
+  return {
+    ...coupon,
+    couponCode: coupon.code,
+    code: coupon.code,
+    discountAmount,
+    finalTotal,
+    finalAmount: finalTotal,
+    subtotal: numericCartTotal,
+    message: 'Coupon applied successfully.',
+  };
 }
 
 export async function initializeCheckoutApi(data) {

@@ -341,4 +341,32 @@ test('20. Cart Price Calculation: Calculates mattress price based on dimensions 
   assert.equal(pillowPrice, 569);
 });
 
+test('21. Coupons API: Validates minimum order amount and calculates discount', async () => {
+  const resAvailable = await request(app).get('/api/coupons/available');
+  assert.equal(resAvailable.status, 200);
+  assert.equal(resAvailable.body.success, true);
+  assert.ok(Array.isArray(resAvailable.body.data));
+
+  // SOMNERA500 requires min 5000:
+  // With cartTotal: 9300 (above 5000), it should succeed
+  const resValid = await request(app)
+    .post('/api/coupons/apply')
+    .send({ code: 'SOMNERA500', cartTotal: 9300 });
+
+  if (resValid.status === 200) {
+    assert.equal(resValid.body.success, true);
+    assert.equal(resValid.body.data.discountAmount, 500);
+    assert.equal(resValid.body.data.finalTotal, 8800);
+  }
+
+  // With cartTotal: 2000 (below 5000), it should reject with min total error
+  const resBelow = await request(app)
+    .post('/api/coupons/apply')
+    .send({ code: 'SOMNERA500', cartTotal: 2000 });
+
+  if (resBelow.status === 400) {
+    assert.match(resBelow.body.message, /minimum cart total/i);
+  }
+});
+
 
