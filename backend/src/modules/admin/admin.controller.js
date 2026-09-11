@@ -334,6 +334,14 @@ export const createAdminProduct = async (req, res, next) => {
       } catch {
         galleryVideos = Array.isArray(body.galleryVideos) ? body.galleryVideos : [body.galleryVideos];
       }
+    } else if (body.videos) {
+      try {
+        galleryVideos = typeof body.videos === 'string'
+          ? JSON.parse(body.videos)
+          : body.videos;
+      } catch {
+        galleryVideos = Array.isArray(body.videos) ? body.videos : [body.videos];
+      }
     }
 
     if (files.galleryVideos && files.galleryVideos.length > 0) {
@@ -452,6 +460,29 @@ export const updateAdminProduct = async (req, res, next) => {
         folder: 'somnera/products/gallery',
       });
       galleryImages = [...galleryImages, ...uploadedGallery.map((u) => u.secure_url || u.url)];
+    }
+
+    let galleryVideos = existing.galleryVideos || existing.videos || [];
+    if (body.galleryVideos) {
+      try {
+        galleryVideos = typeof body.galleryVideos === 'string' ? JSON.parse(body.galleryVideos) : body.galleryVideos;
+      } catch {
+        galleryVideos = Array.isArray(body.galleryVideos) ? body.galleryVideos : [body.galleryVideos];
+      }
+    } else if (body.videos) {
+      try {
+        galleryVideos = typeof body.videos === 'string' ? JSON.parse(body.videos) : body.videos;
+      } catch {
+        galleryVideos = Array.isArray(body.videos) ? body.videos : [body.videos];
+      }
+    }
+
+    if (files.galleryVideos && files.galleryVideos.length > 0) {
+      const uploadedVideos = await cloudinaryService.uploadMultiple(files.galleryVideos, {
+        folder: 'somnera/products/videos',
+        resource_type: 'video',
+      });
+      galleryVideos = [...galleryVideos, ...uploadedVideos.map((u) => u.secure_url || u.url)];
     }
 
     const parseJsonField = (field, fallback) => {
