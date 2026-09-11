@@ -2415,16 +2415,14 @@ const [
     );
 
 
-  const displayFinalAmount =
-    Number(
-      appliedCoupon
-        ?.finalAmount ??
-      appliedCoupon
-        ?.finalTotal ??
-      (displaySubtotal - displayDiscount) ??
-      cartTotal ??
-      0,
-    );
+  const displayFinalAmount = Math.max(
+    0,
+    appliedCoupon?.finalAmount != null
+      ? Number(appliedCoupon.finalAmount)
+      : appliedCoupon?.finalTotal != null
+        ? Number(appliedCoupon.finalTotal)
+        : (displaySubtotal - displayDiscount),
+  );
 
 
   /*
@@ -2697,8 +2695,9 @@ const [
             ...form,
 
             couponCode:
-              appliedCoupon
-                ?.couponCode ||
+              appliedCoupon?.couponCode ||
+              appliedCoupon?.code ||
+              couponCode ||
               '',
           });
 
@@ -4101,8 +4100,10 @@ const [
                   {' '}
 
                   {
-                    appliedCoupon
-                      .couponCode
+                    appliedCoupon.couponCode ||
+                    appliedCoupon.code ||
+                    couponCode ||
+                    ''
                   }
 
                 </span>
