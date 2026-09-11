@@ -1,6 +1,6 @@
 # Somnera Mattress
 
-Frontend-only local React application.
+Frontend-only local application built with React and Vite.
 
 ## Installation
 
@@ -20,10 +20,22 @@ npm run dev
 npm run build
 ```
 
-All application data and admin-uploaded images persist in browser IndexedDB.
-No backend server or external database installation is required.
+The catalog, categories, uploaded product images, customer accounts, carts,
+wishlists, orders, coupons, and distributor requests are stored locally in the
+browser using IndexedDB. Small login/session values use browser storage.
 
-Admin demo login: `admin` / `admin`.
+No Java, Spring Boot, Maven, database server, API server, Docker, or other
+backend installation is required.
 
-Local data is browser/device-specific. Clearing browser site data removes
-locally added information and images.
+Admin demo credentials:
+
+- Admin ID: `admin`
+- Password: `admin`
+
+Frontend-only authentication is intended for local/offline demonstration and
+is not secure enough for a public production admin system.
+
+Because application data is stored in browser IndexedDB, it is specific to the
+current browser and device. Clearing site data removes locally added records
+and uploaded images. Developers can import and call `resetLocalDatabase()`
+from `src/db/database.js` to restore the seed catalog.

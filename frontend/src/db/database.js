@@ -1,5 +1,3 @@
-import { defaultAdmin, defaultCategories, defaultProducts, defaultShowrooms } from '../data/defaultCatalog';
-
 const DB_NAME = 'somnera-local-db';
 const DB_VERSION = 2;
 export const CATALOG_CHANGED_EVENT = 'somnera-catalog-changed';
@@ -75,21 +73,6 @@ export async function replaceAll(storeName, values) {
 
 export async function initializeLocalDatabase() {
   const db = await openLocalDatabase();
-  const transaction = db.transaction(['products', 'categories', 'users', 'showrooms', 'meta'], 'readwrite');
-  const metaStore = transaction.objectStore('meta');
-  const initialized = await requestResult(metaStore.get('catalog-version'));
-  if (!initialized) {
-    defaultProducts.forEach((product) => transaction.objectStore('products').put(structuredClone(product)));
-    defaultCategories.forEach((category) => transaction.objectStore('categories').put(structuredClone(category)));
-    transaction.objectStore('users').put(structuredClone(defaultAdmin));
-    metaStore.put({ id: 'catalog-version', value: 1 });
-  }
-  const showroomsInitialized = await requestResult(metaStore.get('showrooms-version'));
-  if (!showroomsInitialized) {
-    defaultShowrooms.forEach((showroom) => transaction.objectStore('showrooms').put(structuredClone(showroom)));
-    metaStore.put({ id: 'showrooms-version', value: 1 });
-  }
-  await transactionDone(transaction);
   return db;
 }
 
