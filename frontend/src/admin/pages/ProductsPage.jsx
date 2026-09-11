@@ -74,7 +74,7 @@ function containsDuplicateFiles(selectedFiles, queuedFiles) {
 
 async function validateImageFile(file) {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    throw new Error(`${file.name}: use JPG, PNG, WebP, or AVIF.`);
+    throw new Error(`${file.name}: use JPG, PNG, MP4, WebP, or AVIF.`);
   }
 
   if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
