@@ -92,6 +92,79 @@ async function validateImageFile(file) {
 }
 
 
+async function compressImageIfNeeded(file, maxBytes = 9.5 * 1024 * 1024) {
+  if (!file || file.size <= maxBytes) {
+    return file;
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+
+      // Max dimension 3840px (keeps ultra-sharp high resolution while reducing byte weight)
+      const maxDim = 3840;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const targetType = file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+      const ext = targetType === 'image/webp' ? 'webp' : 'jpg';
+
+      const attempt = (quality) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            if (blob.size > maxBytes && quality > 0.4) {
+              attempt(Math.round((quality - 0.1) * 10) / 10);
+            } else {
+              const baseName = file.name.replace(/\.[^/.]+$/, '');
+              const compressedFile = new File([blob], `${baseName}.${ext}`, {
+                type: targetType,
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            }
+          },
+          targetType,
+          quality,
+        );
+      };
+
+      attempt(0.88);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+
+    img.src = url;
+  });
+}
+
+
 function validateVideoFile(file) {
   if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) {
     return Promise.reject(
@@ -912,15 +985,13 @@ function ProductForm({
         URL.revokeObjectURL(imagePreview);
       }
 
-
-      setImageFile(file);
-
+      const processedFile = await compressImageIfNeeded(file);
+      setImageFile(processedFile);
 
       const previewUrl =
         URL.createObjectURL(
-          file,
+          processedFile,
         );
-
 
       setImagePreview(
         previewUrl,
@@ -970,10 +1041,14 @@ function ProductForm({
       }
 
 
+      const processedFiles = await Promise.all(
+        selectedFiles.map((file) => compressImageIfNeeded(file)),
+      );
+
       setGalleryFiles(
         (current) => [
           ...current,
-          ...selectedFiles.map(
+          ...processedFiles.map(
             (file) => ({
               file,
               preview:
@@ -1213,12 +1288,15 @@ function ProductForm({
         setSaving(true);
 
 
+        const finalImageFile = imageFile ? await compressImageIfNeeded(imageFile) : imageFile;
+        const finalGalleryImages = await Promise.all(
+          galleryFiles.map((item) => compressImageIfNeeded(item.file)),
+        );
+
         await onSave(
           draft,
-          imageFile,
-          galleryFiles.map(
-            (item) => item.file,
-          ),
+          finalImageFile,
+          finalGalleryImages,
           galleryVideoFiles.map(
             (item) => item.file,
           ),

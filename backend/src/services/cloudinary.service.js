@@ -51,12 +51,20 @@ class CloudinaryService {
     }
 
     return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: resourceType,
-          ...options,
-        },
+      const isVideo = resourceType === 'video';
+      const uploaderMethod = isVideo && typeof cloudinary.uploader.upload_chunked_stream === 'function'
+        ? cloudinary.uploader.upload_chunked_stream.bind(cloudinary.uploader)
+        : cloudinary.uploader.upload_stream.bind(cloudinary.uploader);
+
+      const streamOptions = {
+        folder,
+        resource_type: resourceType,
+        ...(isVideo ? { chunk_size: 6000000 } : {}),
+        ...options,
+      };
+
+      const uploadStream = uploaderMethod(
+        streamOptions,
         (error, result) => {
           if (error) {
             logger.error('Cloudinary stream upload error:', error);
