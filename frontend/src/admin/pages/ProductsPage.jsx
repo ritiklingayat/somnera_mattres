@@ -46,8 +46,8 @@ const ACCEPTED_VIDEO_TYPES = [
   'video/webm',
   'video/ogg',
 ];
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 75 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MAX_GALLERY_IMAGES = 12;
 const MAX_GALLERY_VIDEOS = 4;
 const MAX_VIDEO_DURATION_SECONDS = 120;
@@ -78,7 +78,7 @@ async function validateImageFile(file) {
   }
 
   if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
-    throw new Error(`${file.name}: image must be smaller than 10 MB.`);
+    throw new Error(`${file.name}: image must be smaller than 20 MB.`);
   }
 
   try {
@@ -101,7 +101,7 @@ function validateVideoFile(file) {
 
   if (file.size <= 0 || file.size > MAX_VIDEO_SIZE) {
     return Promise.reject(
-      new Error(`${file.name}: video must be smaller than 75 MB.`),
+      new Error(`${file.name}: video must be smaller than 100 MB.`),
     );
   }
 
@@ -1598,7 +1598,7 @@ function ProductForm({
           }
 
           <small>
-            JPG, PNG, WebP, or AVIF. Maximum 10 MB.
+            JPG, PNG, WebP, or AVIF. Maximum 20 MB.
           </small>
 
         </label>
@@ -1638,7 +1638,7 @@ function ProductForm({
           />
 
           <small>
-            Up to 12 JPG, PNG, WebP, or AVIF images; maximum 10 MB each. Existing images stay unless removed.
+            Up to 12 JPG, PNG, WebP, or AVIF images; maximum 20 MB each. Existing images stay unless removed.
           </small>
 
         </label>
@@ -1783,7 +1783,7 @@ function ProductForm({
           />
 
           <small>
-            Up to 4 MP4, WebM, or OGG videos; maximum 75 MB and 2 minutes each.
+            Up to 4 MP4, WebM, or OGG videos; maximum 100 MB and 2 minutes each.
           </small>
 
         </label>
