@@ -97,13 +97,27 @@ export default function ProductDetailPage({
   const [
     product,
     setProduct,
-  ] = useState(null);
+  ] = useState(
+    () =>
+      products.find(
+        (item) =>
+          String(item.id) ===
+          String(targetId),
+      ) || null,
+  );
 
 
   const [
     loading,
     setLoading,
-  ] = useState(true);
+  ] = useState(
+    () =>
+      !products.some(
+        (item) =>
+          String(item.id) ===
+          String(targetId),
+      ),
+  );
 
 
   const [
@@ -224,10 +238,14 @@ export default function ProductDetailPage({
             setProduct(
               cachedProduct,
             );
+
+            setLoading(false);
+
+            return;
           }
 
 
-          /* Always read the latest IndexedDB record. */
+          /* Fetch only when the product is not already in the loaded catalog. */
 
           const apiProduct =
             await getProductByIdApi(

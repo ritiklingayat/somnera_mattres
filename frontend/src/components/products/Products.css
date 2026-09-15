@@ -421,6 +421,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   margin-bottom: 10px;
 }
 
@@ -430,21 +431,26 @@
   color: #475569;
 }
 
-.thickness-pills {
-  display: flex;
+.card-thickness-row .thickness-pills {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+  flex: 1;
+  min-width: 0;
   gap: 6px;
 }
 
-.thickness-pill {
+.card-thickness-row .thickness-pill {
+  width: 100%;
+  min-width: 0;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  padding: 3px 8px;
+  padding: 6px 4px;
   font-size: 0.72rem;
   font-weight: 700;
   color: #334155;
   cursor: pointer;
-
+  white-space: nowrap;
 }
 
 .thickness-pill.active {

@@ -147,7 +147,7 @@ export function ProductCard({
 
       window.scrollTo({
         top: 0,
-        behavior: 'smooth',
+        behavior: 'auto',
       });
     };
 
@@ -524,6 +524,9 @@ export function ProductCard({
             to={
               `/#product/${product.id}`
             }
+            onClick={
+              handleEyeClick
+            }
             className="card-title-link"
             aria-label={
               `View details for ${product.name}`
@@ -800,6 +803,9 @@ export function ProductCard({
           <Link
             to={
               `/#product/${product.id}`
+            }
+            onClick={
+              handleEyeClick
             }
             className="view-details-btn"
           >
