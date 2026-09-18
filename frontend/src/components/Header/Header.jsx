@@ -666,30 +666,7 @@ export default function Header({
             </div>
 
 
-            <div className="nav-item">
 
-              <a
-                href="#offers"
-                className="nav-link offer-badge-link"
-                onClick={
-                  (event) => {
-
-                    event.preventDefault();
-
-                    handleNav(
-                      'offers',
-                    );
-                  }
-                }
-              >
-
-                <span className="offer-pulse-dot" />
-
-                Offers
-
-              </a>
-
-            </div>
 
 
             {/* Sleep Advice */}
@@ -1626,22 +1603,7 @@ export default function Header({
                 </a>
 
 
-                <a
-                  href="#offers"
-                  className="mobile-link mobile-offer-link"
-                  onClick={
-                    (event) => {
 
-                      event.preventDefault();
-
-                      handleNav(
-                        'offers',
-                      );
-                    }
-                  }
-                >
-                  🔥 Special Offers
-                </a>
 
 
                 {/* Sleep Advice */}

@@ -51,7 +51,7 @@ const CATEGORIES = [
   },
 ];
 
-export function PillowsProtectorsPage({ products = [] }) {
+export function PillowsProtectorsPage({ products = [], addToCart }) {
   const getHashType = () => {
 
     const query =
@@ -117,7 +117,12 @@ export function PillowsProtectorsPage({ products = [] }) {
 
 
         if (currentType === 'protectors') {
-          return searchable.includes('protector');
+          return (
+            searchable.includes('protector') ||
+            product.productType === 'PROTECTOR' ||
+            product.productSection === 'PROTECTOR' ||
+            Boolean(product.protectorType)
+          );
         }
 
 
@@ -169,7 +174,7 @@ export function PillowsProtectorsPage({ products = [] }) {
           </div>
           <div className="accessory-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginBottom: '40px' }}>
             {visibleProducts.map((p) => (
-              <SimpleProductCard key={p.id} product={p} />
+              <SimpleProductCard key={p.id} product={p} addToCart={addToCart} />
             ))}
           </div>
           <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 40px' }} />

@@ -81,9 +81,7 @@ import {
   WishlistPage,
 } from './pages/WishlistPage';
 
-import {
-  OffersPage,
-} from './pages/OffersPage';
+
 
 import ProductDetailPage
   from './pages/ProductDetailPage';
@@ -1151,8 +1149,9 @@ if (
 
 
   } else if (
-    page ===
-    'pillows-protectors'
+    page === 'pillows-protectors' ||
+    page === 'protectors' ||
+    page === 'mattress-protectors'
   ) {
 
     content = (
@@ -1161,10 +1160,12 @@ if (
         products={
           catalog.filter(
             (product) =>
-              product.productType ===
-                'PROTECTOR' ||
-              product.productSection ===
-                'PILLOWS_ACCESSORIES',
+              product.productType === 'PROTECTOR' ||
+              product.productSection === 'PROTECTOR' ||
+              product.productType === 'PILLOW' ||
+              product.productSection === 'PILLOW' ||
+              product.productSection === 'PILLOWS_ACCESSORIES' ||
+              Boolean(product.protectorType),
           )
         }
         addToCart={
@@ -1241,19 +1242,7 @@ if (
     );
 
 
-  } else if (
-    page ===
-    'offers'
-  ) {
 
-    content = (
-
-      <OffersPage
-        onNavigate={
-          changePage
-        }
-      />
-    );
 
 
   } else if (

@@ -394,6 +394,8 @@ const emptyProduct = {
 
   price8: '',
 
+  pricePerSqFt: '75',
+
   badge:
     'New arrival',
 
@@ -631,6 +633,11 @@ function toFormProduct(
       product.prices?.[8] ??
       product.price8Inch ??
       '',
+
+    pricePerSqFt:
+      product.prices?.pricePerSqFt ??
+      product.pricePerSqFt ??
+      '75',
 
     shortDescription:
       product.shortDescription ||
@@ -2125,20 +2132,39 @@ function ProductForm({
 
             {
               isProtector && (
-                <label className="admin-checkbox-fieldset">
-                  Available Sizes
-                  <CheckboxGroup
-                    options={PROTECTOR_SIZE_OPTIONS}
-                    selected={draft.availableSizes}
-                    onChange={
-                      (value) =>
-                        setArrayValue(
-                          'availableSizes',
-                          value,
-                        )
-                    }
-                  />
-                </label>
+                <>
+                  <label className="admin-checkbox-fieldset">
+                    Available Sizes
+                    <CheckboxGroup
+                      options={PROTECTOR_SIZE_OPTIONS}
+                      selected={draft.availableSizes}
+                      onChange={
+                        (value) =>
+                          setArrayValue(
+                            'availableSizes',
+                            value,
+                          )
+                      }
+                    />
+                  </label>
+
+                  <div className="form-two-columns" style={{ marginTop: '1rem' }}>
+                    <label>
+                      Price Per Sq. Ft. (₹)
+                      <input
+                        name="pricePerSqFt"
+                        type="number"
+                        min="1"
+                        step="0.01"
+                        value={draft.pricePerSqFt}
+                        onChange={setValue}
+                        placeholder="75"
+                        disabled={saving}
+                      />
+                      <small>Standard default rate is ₹75 per square feet.</small>
+                    </label>
+                  </div>
+                </>
               )
             }
 

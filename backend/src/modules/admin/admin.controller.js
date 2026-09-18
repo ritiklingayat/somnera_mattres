@@ -365,6 +365,11 @@ export const createAdminProduct = async (req, res, next) => {
     if (body.price5) prices['5'] = Number(body.price5);
     if (body.price6) prices['6'] = Number(body.price6);
     if (body.price8) prices['8'] = Number(body.price8);
+    if (body.pricePerSqFt !== undefined && body.pricePerSqFt !== null && body.pricePerSqFt !== '') {
+      prices.pricePerSqFt = Number(body.pricePerSqFt);
+    } else if (!prices.pricePerSqFt && (body.productSection === 'PROTECTOR' || body.productType === 'PROTECTOR')) {
+      prices.pricePerSqFt = 75;
+    }
 
     const effectivePrice = body.offerPrice ? Number(body.offerPrice) : (body.sellingPrice ? Number(body.sellingPrice) : (body.price ? Number(body.price) : null));
 
@@ -501,6 +506,11 @@ export const updateAdminProduct = async (req, res, next) => {
     if (body.price5 !== undefined) prices['5'] = Number(body.price5);
     if (body.price6 !== undefined) prices['6'] = Number(body.price6);
     if (body.price8 !== undefined) prices['8'] = Number(body.price8);
+    if (body.pricePerSqFt !== undefined && body.pricePerSqFt !== null && body.pricePerSqFt !== '') {
+      prices.pricePerSqFt = Number(body.pricePerSqFt);
+    } else if (!prices.pricePerSqFt && (existing.productSection === 'PROTECTOR' || existing.productType === 'PROTECTOR' || body.productSection === 'PROTECTOR')) {
+      prices.pricePerSqFt = 75;
+    }
 
     const effectivePrice = body.offerPrice !== undefined ? Number(body.offerPrice) : (body.sellingPrice !== undefined ? Number(body.sellingPrice) : (body.price !== undefined ? Number(body.price) : existing.price));
 

@@ -369,11 +369,20 @@ export default function Home({ products = [], categories = [], onBrowse, onNavig
           </div>
           <div className="category-cards">
             {(categories && categories.length > 0
-    ? categories.map((cat) => ({
-        name: cat.name,
-        route: cat.slug || cat.name.toLowerCase().replace(/\s+/g, '-'),
-        image: cat.imageUrl || cat.image || findCategoryImage('MATTRESS', [cat.name.toLowerCase()], mattressCategoryImage),
-      }))
+    ? categories.map((cat) => {
+        const lowerName = (cat.name || '').toLowerCase();
+        let route = cat.slug || lowerName.replace(/\s+/g, '-');
+        if (lowerName.includes('protector')) {
+          route = 'pillows-protectors?type=protectors';
+        } else if (lowerName.includes('pillow')) {
+          route = 'pillows';
+        }
+        return {
+          name: cat.name,
+          route,
+          image: cat.imageUrl || cat.image || findCategoryImage('MATTRESS', [lowerName], mattressCategoryImage),
+        };
+      })
     : sleepCategories).map((category) => (
               <button
                 key={category.name}
@@ -429,6 +438,7 @@ export default function Home({ products = [], categories = [], onBrowse, onNavig
                         <PillowProductCard
                           key={product.id}
                           product={product}
+                          addToCart={onAddToCart}
                           compact
                         />
                       ),

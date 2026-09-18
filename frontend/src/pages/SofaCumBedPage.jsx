@@ -48,7 +48,7 @@ export function SofaCumBedPage({ products = [] }) {
             </div>
             <div className="sofa-products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginBottom: '48px' }}>
               {products.map((p) => (
-                <SimpleProductCard key={p.id} product={p} />
+                <SimpleProductCard key={p.id} product={p} addToCart={addToCart} />
               ))}
             </div>
             <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '0 0 40px' }} />

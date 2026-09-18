@@ -17,8 +17,8 @@ import useWishlistStatus
 
 function SimpleProductCard({
   product,
+  addToCart,
 }) {
-
   const {
     isLoggedIn,
     openAuthModal,
@@ -126,9 +126,12 @@ function SimpleProductCard({
       : product.price != null &&
         Number.isFinite(
           Number(product.price),
-        )
+        ) &&
+        Number(product.price) > 0
         ? Number(product.price)
-        : null;
+        : getMinProductPrice(
+            product,
+          );
 
 
   const discountPercent =
@@ -185,6 +188,30 @@ function SimpleProductCard({
         behavior: 'smooth',
       });
     };
+
+  const handleAddToCartClick = (event) => {
+    event.stopPropagation();
+    if (typeof addToCart === 'function') {
+      const isProtector =
+        product.productType === 'PROTECTOR' ||
+        product.productSection === 'PROTECTOR' ||
+        Boolean(product.protectorType);
+
+      const sizeLabel = isProtector
+        ? 'Single (72x36 in • 18 sq ft)'
+        : (Array.isArray(product.availableSizes) && product.availableSizes[0]) || 'Standard';
+
+      addToCart({
+        ...product,
+        size: sizeLabel,
+        price,
+        quantity: 1,
+        packSize: Number(product.packSize) === 2 ? 2 : 1,
+      });
+    } else {
+      handleViewDetails();
+    }
+  };
 
 
   return (
@@ -716,7 +743,7 @@ function SimpleProductCard({
         <button
           type="button"
           onClick={
-            handleViewDetails
+            handleAddToCartClick
           }
           style={{
             marginTop:
@@ -776,7 +803,7 @@ function SimpleProductCard({
             }
           }
         >
-          View Details →
+          {addToCart ? 'Add to Cart →' : 'View Details →'}
         </button>
 
       </div>

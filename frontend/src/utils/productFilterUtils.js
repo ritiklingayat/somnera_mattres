@@ -15,6 +15,18 @@ export const normalizeFilterValue = (value = '') =>
 export function getMinProductPrice(product) {
   if (!product) return 0;
 
+  const isProtector =
+    product.productType === 'PROTECTOR' ||
+    product.productSection === 'PROTECTOR' ||
+    (typeof product.protectorType === 'string' && product.protectorType.length > 0);
+
+  if (isProtector) {
+    const ratePerSqFt = Number(product.prices?.pricePerSqFt) || Number(product.pricePerSqFt) || 75;
+    // Starting single size (72x36 in = 18 sq ft)
+    const minPrice = Math.round(18 * ratePerSqFt);
+    if (minPrice > 0) return minPrice;
+  }
+
   // If fixed numerical price exists
   if (typeof product.price === 'number' && product.price > 0) {
     return product.price;
@@ -22,7 +34,7 @@ export function getMinProductPrice(product) {
 
   // If prices object with thickness exists
   const pricesObj = product.prices || {};
-  const thicknesses = Object.keys(pricesObj);
+  const thicknesses = Object.keys(pricesObj).filter((k) => k !== 'pricePerSqFt');
 
   if (thicknesses.length > 0) {
     const validPrices = thicknesses
@@ -39,7 +51,7 @@ export function getMinProductPrice(product) {
 
   // Fallback check
   const calculated = getPrice(product, '72x60');
-  return calculated > 0 ? calculated : 5000;
+  return calculated > 0 ? calculated : 1350;
 }
 
 // Map product metadata attributes safely

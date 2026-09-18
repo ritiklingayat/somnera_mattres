@@ -187,6 +187,7 @@ function FilterContent({
 
 export function PillowsPage({
   products = [],
+  addToCart,
 }) {
   const initial =
     readHashFilters();
@@ -382,6 +383,7 @@ export function PillowsPage({
                         <PillowProductCard
                           key={product.id}
                           product={product}
+                          addToCart={addToCart}
                         />
                       ),
                     )

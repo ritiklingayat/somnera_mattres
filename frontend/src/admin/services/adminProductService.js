@@ -9,6 +9,9 @@ export function buildProductRequest(draft) {
     const value = numberOrNull(draft[`price${size}`]);
     if (value != null) prices[size] = value;
   });
+  if (draft.pricePerSqFt != null && draft.pricePerSqFt !== '') {
+    prices.pricePerSqFt = numberOrNull(draft.pricePerSqFt);
+  }
   const effectivePrice = numberOrNull(draft.offerPrice) ?? numberOrNull(draft.sellingPrice);
   return {
     ...draft,

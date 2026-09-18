@@ -1,3 +1,5 @@
+import { getMinProductPrice } from '../../utils/productFilterUtils';
+
 function formatPrice(value) {
   if (
     value === null ||
@@ -18,27 +20,23 @@ function formatPrice(value) {
 export function PillowProductCard({
   product,
   compact = false,
+  addToCart,
 }) {
-  const price =
-    formatPrice(product.price);
+  const effectivePriceVal =
+    Number(product.price) > 0
+      ? Number(product.price)
+      : getMinProductPrice(product);
 
-  const mrp =
-    formatPrice(product.mrp);
+  const price = formatPrice(effectivePriceVal);
+
+  const mrp = formatPrice(product.mrp);
 
   const hasDiscount =
-    Number(product.mrp) >
-      Number(product.price) &&
-    Number(product.price) > 0;
+    Number(product.mrp) > effectivePriceVal && effectivePriceVal > 0;
 
   const discount =
     hasDiscount
-      ? Math.round(
-          (
-            1 -
-            Number(product.price) /
-              Number(product.mrp)
-          ) * 100,
-        )
+      ? Math.round((1 - effectivePriceVal / Number(product.mrp)) * 100)
       : 0;
 
   const isOutOfStock =
@@ -154,17 +152,37 @@ export function PillowProductCard({
           type="button"
           className="pillow-product-card__view"
           onClick={
-            () => {
-              window.location.hash =
-                `product/${product.id}`;
-              window.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              });
+            (e) => {
+              e.stopPropagation();
+              if (typeof addToCart === 'function') {
+                const isProtector =
+                  product.productType === 'PROTECTOR' ||
+                  product.productSection === 'PROTECTOR' ||
+                  Boolean(product.protectorType);
+
+                const sizeLabel = isProtector
+                  ? 'Single (72x36 in • 18 sq ft)'
+                  : (Array.isArray(product.availableSizes) && product.availableSizes[0]) || 'Standard';
+
+                addToCart({
+                  ...product,
+                  size: sizeLabel,
+                  price: effectivePriceVal,
+                  quantity: 1,
+                  packSize,
+                });
+              } else {
+                window.location.hash =
+                  `product/${product.id}`;
+                window.scrollTo({
+                  top: 0,
+                  behavior: 'smooth',
+                });
+              }
             }
           }
         >
-          View product <span aria-hidden="true">→</span>
+          {addToCart ? 'Add to Cart →' : 'View product →'}
         </button>
       </div>
     </article>

@@ -617,6 +617,13 @@ export default function ProductDetailPage({
         : 'Protectors';
 
 
+  const protectorPricePerSqFt = Number(product?.prices?.pricePerSqFt) || Number(product?.pricePerSqFt) || 75;
+  const [pLenStr, pWidStr] = String(selectedSize).toLowerCase().split('x');
+  const pLen = Number(pLenStr) || 72;
+  const pWid = Number(pWidStr) || 36;
+  const protectorSqFt = Number(((pLen * pWid) / 144).toFixed(2));
+  const calculatedProtectorPrice = Math.round(protectorSqFt * protectorPricePerSqFt);
+
   const genericPrice =
     product.price == null
       ? null
@@ -630,9 +637,11 @@ export default function ProductDetailPage({
           selectedSize,
           selectedThickness,
         )
-      : Number.isFinite(genericPrice)
-        ? genericPrice
-        : null;
+      : isProtector
+        ? calculatedProtectorPrice
+        : Number.isFinite(genericPrice)
+          ? genericPrice
+          : null;
 
 
   const minimumPrice =
@@ -642,7 +651,7 @@ export default function ProductDetailPage({
 
 
   const displayPrice =
-    isMattress
+    isMattress || isProtector
       ? price > 0
         ? price
         : minimumPrice
@@ -661,9 +670,8 @@ export default function ProductDetailPage({
    */
 
   const discountPercent =
-    isMattress
-      ? product.discountPercent ||
-        15
+    isMattress || isProtector
+      ? product.discountPercent || 15
       : Number(product.mrp) >
           Number(displayPrice) &&
         Number(displayPrice) > 0
@@ -678,7 +686,7 @@ export default function ProductDetailPage({
 
 
   const originalPrice =
-    isMattress
+    isMattress || isProtector
       ? Math.round(
           displayPrice *
           (
@@ -966,7 +974,7 @@ export default function ProductDetailPage({
 
 
             {
-              isMattress && (
+              (isMattress || isProtector) && (
                 <div className="mattress-configurator">
                   <fieldset className="product-size-selector">
                     <legend>Step 2: Choose your Size</legend>
@@ -1004,7 +1012,7 @@ export default function ProductDetailPage({
                             max="120"
                             value={customLength}
                             onChange={(event) => setCustomLength(event.target.value)}
-                            aria-label="Custom mattress length in inches"
+                            aria-label="Custom length in inches"
                             placeholder="Length"
                           />
                           <span>×</span>
@@ -1014,7 +1022,7 @@ export default function ProductDetailPage({
                             max="120"
                             value={customWidth}
                             onChange={(event) => setCustomWidth(event.target.value)}
-                            aria-label="Custom mattress width in inches"
+                            aria-label="Custom width in inches"
                             placeholder="Width"
                           />
                         </div>
@@ -1040,19 +1048,28 @@ export default function ProductDetailPage({
                       )}
                     </label>
 
-                    <label className="mattress-config-field">
-                      <span>Step 5: Mattress Thickness</span>
-                      <select
-                        value={selectedThickness}
-                        onChange={(event) => setSelectedThickness(event.target.value)}
-                      >
-                        {thicknessKeys.map((thickness) => (
-                          <option key={thickness} value={thickness}>
-                            {thickness} inch
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    {isMattress ? (
+                      <label className="mattress-config-field">
+                        <span>Step 5: Mattress Thickness</span>
+                        <select
+                          value={selectedThickness}
+                          onChange={(event) => setSelectedThickness(event.target.value)}
+                        >
+                          {thicknessKeys.map((thickness) => (
+                            <option key={thickness} value={thickness}>
+                              {thickness} inch
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <div className="mattress-config-field">
+                        <span>Step 5: Area &amp; Rate</span>
+                        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem', color: '#5b21b6' }}>
+                          <strong>{protectorSqFt} Sq. Ft.</strong> @ ₹{protectorPricePerSqFt}/sq ft
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mattress-config-field">
                       <span>Step 6: Quantity</span>
@@ -1079,26 +1096,7 @@ export default function ProductDetailPage({
 
 
             {
-              isProtector && accessorySizes.length > 0 && (
-                <label className="mattress-config-field accessory-size-selector">
-                  <span>Choose a Size</span>
-                  <select
-                    value={selectedAccessorySize}
-                    onChange={(event) => setSelectedAccessorySize(event.target.value)}
-                  >
-                    {accessorySizes.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )
-            }
-
-
-            {
-              !isMattress && (
+              !isMattress && !isProtector && (
                 <div className="accessory-quantity-row">
                   <span>{isPillow ? 'Pack Quantity' : 'Quantity'}</span>
                   <div className="product-quantity-control">
@@ -1221,7 +1219,9 @@ export default function ProductDetailPage({
                       ...product,
                       size: isMattress
                         ? selectedSize
-                        : selectedAccessorySize,
+                        : isProtector
+                          ? `${selectedSizeOption} (${selectedSize} in • ${protectorSqFt} sq ft)`
+                          : selectedAccessorySize,
                       thickness: isMattress
                         ? selectedThickness
                         : '',
@@ -1234,7 +1234,7 @@ export default function ProductDetailPage({
                   isOutOfStock ||
                   !hasPurchasablePrice ||
                   (
-                    isMattress &&
+                    (isMattress || isProtector) &&
                     selectedSizeOption === 'CUSTOM' &&
                     !customSizeIsValid
                   )
