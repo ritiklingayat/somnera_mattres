@@ -32,6 +32,8 @@ app.use(helmet({
 // CORS Configuration
 const allowedOrigins = [
   env.FRONTEND_URL,
+  'https://somnera.in',
+  'https://www.somnera.in',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:3000',
@@ -40,11 +42,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl) or if in allowed list
+    // Allow requests with no origin (like mobile apps/curl) or if in allowed list
     if (
       !origin ||
       allowedOrigins.includes(origin) ||
       origin.endsWith('.vercel.app') ||
+      origin.endsWith('.somnera.in') ||
       process.env.NODE_ENV !== 'production'
     ) {
       callback(null, true);
