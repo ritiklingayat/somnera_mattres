@@ -497,6 +497,88 @@
   background: #fff;
   font-size: 0.68rem;
 }
+.order-table-head,
+.order-table-row {
+  grid-template-columns: 1.15fr 1.55fr 0.85fr 1fr 0.75fr 1.15fr !important;
+  min-width: 860px;
+}
+.receipt-col {
+  display: flex;
+  align-items: center;
+}
+.admin-print-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #d3af5d;
+  background: #fbf8f2;
+  color: #8b6636;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+.admin-print-btn:hover {
+  background: #8b6636;
+  color: #fff;
+}
+.admin-status-select {
+  border: 1px solid var(--admin-line);
+  padding: 6px 10px;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #241132;
+  cursor: pointer;
+  outline: none;
+  width: 100%;
+  max-width: 140px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.admin-status-select:focus {
+  border-color: #e86315;
+  box-shadow: 0 0 0 2px rgba(232, 99, 21, 0.15);
+}
+.admin-status-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.admin-feedback-banner {
+  padding: 12px 18px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  animation: fadeIn 0.2s ease-in-out;
+}
+.admin-feedback-banner.is-success {
+  background: #e6f7ec;
+  color: #1e6b37;
+  border: 1px solid #b7ebd0;
+}
+.admin-feedback-banner.is-error {
+  background: #fdf2f2;
+  color: #c53030;
+  border: 1px solid #f8b4b4;
+}
+.admin-feedback-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+.admin-feedback-close:hover {
+  opacity: 1;
+}
 .row-actions {
   display: flex;
   gap: 5px;

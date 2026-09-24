@@ -1,19 +1,39 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../components/Account';
+import { getPreviousAddressesApi } from '../../services/checkoutService';
 
 export default function AddressesPage() {
-  const { showToast } = useAuth();
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      label: 'Home',
-      line1: '42 Turner Road, Bandra West',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400050',
-      phone: '+91 98765 43210',
-    },
-  ]);
+  const { showToast, user: currentUser } = useAuth();
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        const saved = await getPreviousAddressesApi();
+        if (!active) return;
+        const mapped = (Array.isArray(saved) ? saved : [])
+          .filter((a) => (!a.user_id && !a.userId) || String(a.user_id || a.userId) === String(currentUser?.id))
+          .map((a) => ({
+            id: a.id,
+            label: 'Delivery Address',
+            line1: a.fullAddress || a.address || '',
+            city: a.city || '',
+            state: a.state || '',
+            pincode: a.pincode || '',
+            phone: a.mobile || a.phone || '',
+          }));
+        setAddresses(mapped);
+      } catch (err) {
+        console.error('Failed to load user addresses:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [currentUser]);
 
   const [form, setForm] = useState({ label: '', line1: '', city: '', state: '', pincode: '', phone: '' });
   const [showForm, setShowForm] = useState(false);

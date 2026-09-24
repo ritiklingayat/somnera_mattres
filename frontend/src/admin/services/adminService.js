@@ -21,6 +21,40 @@ export async function getAdminOrdersApi() {
   return (await getAll('orders')).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
+export async function updateAdminOrderStatusApi(orderId, orderStatus) {
+  try {
+    const data = await api.put(`/admin/orders/${orderId}/status`, { orderStatus });
+    if (data) {
+      try {
+        const local = await getOne('orders', orderId);
+        if (local) {
+          await putOne('orders', { ...local, orderStatus, updatedAt: new Date().toISOString() });
+        }
+      } catch (_) {}
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('somnera:order-updated', { detail: { orderId, orderStatus } }));
+      }
+      return data;
+    }
+  } catch (err) {
+    if (err.status) throw err;
+  }
+
+  // Local fallback
+  const current = await getOne('orders', orderId);
+  if (!current) throw new Error('Order not found.');
+  const updated = {
+    ...current,
+    orderStatus,
+    updatedAt: new Date().toISOString(),
+  };
+  await putOne('orders', updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('somnera:order-updated', { detail: { orderId, orderStatus } }));
+  }
+  return updated;
+}
+
 export async function getAdminDistributorRequestsApi() {
   const data = await api.get('/admin/distributor-requests');
   return Array.isArray(data) ? data : (data?.data || []);

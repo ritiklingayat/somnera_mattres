@@ -6,7 +6,12 @@ import {
 
 import {
   getAdminOrdersApi,
+  updateAdminOrderStatusApi,
 } from '../services/adminService';
+
+import {
+  printOrderReceipt,
+} from '../../utils/receiptGenerator';
 
 
 const labelStatus =
@@ -123,6 +128,24 @@ export default function OrdersPage() {
   ] = useState(
     'ALL',
   );
+
+  const [
+    updatingOrderId,
+    setUpdatingOrderId,
+  ] = useState(null);
+
+  const [
+    feedback,
+    setFeedback,
+  ] = useState(null);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => {
+      setFeedback(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
 
   /*
@@ -289,101 +312,46 @@ export default function OrdersPage() {
 
   /*
   ================================================
-  PRINT ORDER
+  STATUS UPDATE ACTION
   ================================================
   */
 
-  const printInvoice =
-    (order) => {
-
-      const invoice =
-        window.open(
-          '',
-          '_blank',
-        );
-
-
-      if (!invoice) {
-
-        return;
-      }
-
-
-      const products =
-        Array.isArray(
-          order.items,
-        )
-          ? order.items
-              .map(
-                (item) =>
-                  `
-                    <p>
-                      ${item.productName || 'Product'}
-                      × ${item.quantity || 0}
-                      ${item.productType === 'PILLOW' ? ` ${Number(item.quantity || 0) === 1 ? 'pack' : 'packs'} (${Number(item.packSize) === 2 ? '2 pillows per pack' : '1 pillow per pack'})` : ''}
-                      ${
-                        item.thickness
-                          ? ` · ${item.thickness}" thickness`
-                          : ''
-                      }
-                      — ₹${formatMoney(item.itemTotal)}
-                    </p>
-                  `,
-              )
-              .join('')
-          : '';
-
-
-      invoice.document.write(
-        `
-          <title>Order #${order.id}</title>
-
-          <main style="font-family:Arial;padding:48px">
-
-            <h1>Somnera Mattress & Foam</h1>
-
-            <h2>Order #${order.id}</h2>
-
-            <p>
-              <b>Customer:</b>
-              ${order.fullName || ''}
-            </p>
-
-            <p>
-              ${order.email || ''}
-            </p>
-
-            <p>
-              ${order.mobile || ''}
-            </p>
-
-            <hr />
-
-            ${products}
-
-            <hr />
-
-            <h2>
-              Total ₹${formatMoney(order.totalAmount)}
-            </h2>
-
-            <p>
-              Order Status:
-              ${labelStatus(order.orderStatus)}
-            </p>
-
-            <p>
-              Payment Status:
-              ${labelStatus(order.paymentStatus)}
-            </p>
-
-          </main>
-        `,
+  const handleStatusChange = async (orderId, newStatus) => {
+    if (!newStatus) return;
+    try {
+      setUpdatingOrderId(orderId);
+      setFeedback(null);
+      const updated = await updateAdminOrderStatusApi(orderId, newStatus);
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId
+            ? { ...order, ...updated, orderStatus: newStatus }
+            : order,
+        ),
       );
+      setFeedback({
+        type: 'success',
+        message: `Order #${orderId} status successfully updated to ${labelStatus(newStatus)}.`,
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to update order status. Please try again.',
+      });
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
 
+  /*
+  ================================================
+  GENERATE RECEIPT HTML & PRINT RECEIPT
+  ================================================
+  */
 
-      invoice.print();
-    };
+  const printInvoice = (order) => {
+    printOrderReceipt(order);
+  };
 
 
   return (
@@ -426,6 +394,24 @@ export default function OrdersPage() {
 
 
       <section className="admin-card">
+
+        {feedback && (
+          <div
+            className={`admin-feedback-banner ${feedback.type === 'error' ? 'is-error' : 'is-success'}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span>{feedback.message}</span>
+            <button
+              type="button"
+              className="admin-feedback-close"
+              onClick={() => setFeedback(null)}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <div className="order-toolbar">
 
@@ -588,7 +574,7 @@ export default function OrdersPage() {
 
                   <div className="order-table">
 
-                    <div className="table-head">
+                    <div className="table-head order-table-head">
 
                       <span>
                         Order
@@ -604,6 +590,10 @@ export default function OrdersPage() {
 
                       <span>
                         Status
+                      </span>
+
+                      <span>
+                        Receipt
                       </span>
 
                       <span>
@@ -643,7 +633,7 @@ export default function OrdersPage() {
                           return (
 
                             <div
-                              className="table-row"
+                              className="table-row order-table-row"
                               key={
                                 order.id
                               }
@@ -678,14 +668,14 @@ export default function OrdersPage() {
 
                                 <b>
                                   {
-                                    order.fullName
+                                    order.fullName || 'Customer'
                                   }
                                 </b>
 
 
                                 <small>
                                   {
-                                    order.email
+                                    order.email || '—'
                                   }
                                 </small>
 
@@ -752,19 +742,75 @@ export default function OrdersPage() {
                               </span>
 
 
-                              <span className="row-actions">
+                              <span className="receipt-col">
 
                                 <button
                                   type="button"
+                                  className="admin-print-btn"
                                   onClick={
                                     () =>
                                       printInvoice(
                                         order,
                                       )
                                   }
+                                  title={`Print receipt for order #${order.id}`}
                                 >
                                   Print
                                 </button>
+
+                              </span>
+
+
+                              <span className="row-actions">
+
+                                <select
+                                  className="admin-status-select"
+                                  value={
+                                    ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(
+                                      order.orderStatus,
+                                    )
+                                      ? order.orderStatus
+                                      : ''
+                                  }
+                                  onChange={
+                                    (event) =>
+                                      handleStatusChange(
+                                        order.id,
+                                        event.target.value,
+                                      )
+                                  }
+                                  disabled={
+                                    updatingOrderId ===
+                                    order.id
+                                  }
+                                  aria-label={`Change status for order ${order.id}`}
+                                >
+
+                                  <option
+                                    value=""
+                                    disabled
+                                  >
+                                    {
+                                      order.orderStatus ===
+                                      'CONFIRMED'
+                                        ? 'Update Status'
+                                        : 'Change Status'
+                                    }
+                                  </option>
+
+                                  <option value="PROCESSING">
+                                    PROCESSING
+                                  </option>
+
+                                  <option value="SHIPPED">
+                                    SHIPPED
+                                  </option>
+
+                                  <option value="DELIVERED">
+                                    DELIVERED
+                                  </option>
+
+                                </select>
 
                               </span>
 

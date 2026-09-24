@@ -685,6 +685,95 @@ export const deleteAdminCoupon = async (req, res, next) => {
 5. ORDER MANAGEMENT
 ==================================================
 */
+const ALLOWED_ORDER_STATUSES = [
+  'PENDING_PAYMENT',
+  'CONFIRMED',
+  'PROCESSING',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELLED',
+];
+
+const ALLOWED_PAYMENT_STATUSES = [
+  'PENDING',
+  'PAID',
+  'FAILED',
+];
+
+const formatAdminOrder = (order) => {
+  if (!order) return order;
+  let shipping = order.shippingAddress;
+  if (typeof shipping === 'string') {
+    try { shipping = JSON.parse(shipping); } catch (_) { shipping = {}; }
+  } else if (!shipping || typeof shipping !== 'object') {
+    shipping = {};
+  }
+  let billing = order.billingAddress;
+  if (typeof billing === 'string') {
+    try { billing = JSON.parse(billing); } catch (_) { billing = {}; }
+  } else if (!billing || typeof billing !== 'object') {
+    billing = {};
+  }
+
+  const user = order.user || {};
+  const userFullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  const shippingFullName =
+    shipping.fullName ||
+    [shipping.firstName, shipping.lastName].filter(Boolean).join(' ').trim();
+
+  const fullName =
+    shippingFullName ||
+    (order.fullName && order.fullName !== 'Customer' ? order.fullName : '') ||
+    userFullName ||
+    order.name ||
+    'Customer';
+
+  const email = shipping.email || order.email || user.email || '';
+  const mobile = shipping.mobile || shipping.phone || order.mobile || order.phone || user.mobile || '';
+  const gstNumber = shipping.gstNumber || order.gstNumber || billing.gstNumber || null;
+
+  const fullAddress =
+    shipping.fullAddress ||
+    shipping.address ||
+    order.fullAddress ||
+    [shipping.address, shipping.apartment, shipping.city, shipping.state, shipping.pincode].filter(Boolean).join(', ') ||
+    '';
+  const state = shipping.state || order.state || '';
+  const city = shipping.city || order.city || '';
+  const pincode = shipping.pincode || shipping.postalCode || shipping.pin || order.pincode || '';
+
+  return {
+    ...order,
+    fullName,
+    email,
+    mobile,
+    fullAddress,
+    state,
+    city,
+    pincode,
+    gstNumber,
+    shippingAddress: {
+      ...shipping,
+      fullName: shipping.fullName || fullName,
+      email: shipping.email || email,
+      mobile: shipping.mobile || mobile,
+      fullAddress: shipping.fullAddress || fullAddress,
+      state: shipping.state || state,
+      city: shipping.city || city,
+      pincode: shipping.pincode || pincode,
+      gstNumber: shipping.gstNumber || gstNumber,
+    },
+    billingAddress: billing,
+    user: {
+      id: user.id || order.userId,
+      firstName: user.firstName || (fullName !== 'Customer' ? fullName.split(' ')[0] : ''),
+      lastName: user.lastName || (fullName !== 'Customer' ? fullName.split(' ').slice(1).join(' ') : ''),
+      email: email || user.email,
+      mobile: mobile || user.mobile,
+    },
+  };
+};
+
 export const getAdminOrders = async (req, res, next) => {
   try {
     const orders = await prisma.order.findMany({
@@ -703,7 +792,7 @@ export const getAdminOrders = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    return sendSuccess(res, orders, 'All orders retrieved for admin.');
+    return sendSuccess(res, orders.map(formatAdminOrder), 'All orders retrieved for admin.');
   } catch (error) {
     next(error);
   }
@@ -714,6 +803,36 @@ export const updateAdminOrderStatus = async (req, res, next) => {
     const { id } = req.params;
     const { orderStatus, paymentStatus, trackingNumber, courier } = req.body;
 
+    let normalizedStatus;
+    if (orderStatus !== undefined) {
+      if (typeof orderStatus !== 'string') {
+        return sendError(res, 'Order status must be a string.', 400);
+      }
+      normalizedStatus = orderStatus.trim().toUpperCase().replace(/\s+/g, '_');
+      if (!ALLOWED_ORDER_STATUSES.includes(normalizedStatus)) {
+        return sendError(
+          res,
+          `Invalid order status: ${orderStatus}. Allowed statuses are: ${ALLOWED_ORDER_STATUSES.join(', ')}`,
+          400,
+        );
+      }
+    }
+
+    let normalizedPaymentStatus;
+    if (paymentStatus !== undefined) {
+      if (typeof paymentStatus !== 'string') {
+        return sendError(res, 'Payment status must be a string.', 400);
+      }
+      normalizedPaymentStatus = paymentStatus.trim().toUpperCase().replace(/\s+/g, '_');
+      if (!ALLOWED_PAYMENT_STATUSES.includes(normalizedPaymentStatus)) {
+        return sendError(
+          res,
+          `Invalid payment status: ${paymentStatus}. Allowed statuses are: ${ALLOWED_PAYMENT_STATUSES.join(', ')}`,
+          400,
+        );
+      }
+    }
+
     const existing = await prisma.order.findUnique({ where: { id } });
     if (!existing) {
       return sendError(res, 'Order not found.', 404);
@@ -722,18 +841,28 @@ export const updateAdminOrderStatus = async (req, res, next) => {
     const updated = await prisma.order.update({
       where: { id },
       data: {
-        ...(orderStatus ? { orderStatus } : {}),
-        ...(paymentStatus ? { paymentStatus } : {}),
+        ...(normalizedStatus ? { orderStatus: normalizedStatus } : {}),
+        ...(normalizedPaymentStatus ? { paymentStatus: normalizedPaymentStatus } : {}),
         ...(trackingNumber !== undefined ? { trackingNumber } : {}),
         ...(courier !== undefined ? { courier } : {}),
       },
       include: {
-        user: { select: { firstName: true, lastName: true, email: true } },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            mobile: true,
+          },
+        },
         items: true,
       },
     });
 
-    return sendSuccess(res, updated, 'Order fulfillment status updated.');
+    const formatted = formatAdminOrder(updated);
+
+    return sendSuccess(res, formatted, 'Order fulfillment status updated.');
   } catch (error) {
     next(error);
   }

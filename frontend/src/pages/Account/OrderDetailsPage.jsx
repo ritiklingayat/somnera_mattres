@@ -13,6 +13,14 @@ import LoadingSpinner
 import AccountLayout
   from './AccountLayout';
 
+import {
+  OrderTracker,
+} from './OrdersPage';
+
+import {
+  printOrderReceipt,
+} from '../../utils/receiptGenerator';
+
 
 /*
 ==================================================
@@ -216,13 +224,18 @@ export default function OrderDetailsPage({
 
     loadOrder();
 
-
-    return () => {
-
-      active =
-        false;
+    const handleSync = () => {
+      loadOrder();
     };
 
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('somnera:order-updated', handleSync);
+
+    return () => {
+      active = false;
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('somnera:order-updated', handleSync);
+    };
   }, [
     orderId,
   ]);
@@ -405,6 +418,13 @@ export default function OrderDetailsPage({
           </span>
 
         </div>
+
+
+        <OrderTracker
+          status={
+            order.orderStatus
+          }
+        />
 
 
         {/* PRODUCTS */}
@@ -715,6 +735,12 @@ export default function OrderDetailsPage({
 
           </p>
 
+          {order.gstNumber && (
+            <p>
+              <strong>GSTIN:</strong> {order.gstNumber}
+            </p>
+          )}
+
         </div>
 
 
@@ -750,19 +776,35 @@ export default function OrderDetailsPage({
         </div>
 
 
-        <a
-          href="#orders"
-          className="account-submit-btn"
+        <div
           style={{
-            display:
-              'inline-block',
-
-            marginTop:
-              '20px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
+            marginTop: '20px',
           }}
         >
-          ← Back to My Orders
-        </a>
+          <button
+            type="button"
+            className="account-submit-btn"
+            onClick={() => printOrderReceipt(order)}
+          >
+            View Receipt
+          </button>
+
+          <a
+            href="#orders"
+            className="account-submit-btn"
+            style={{
+              display: 'inline-block',
+              background: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+            }}
+          >
+            ← Back to My Orders
+          </a>
+        </div>
 
       </div>
 

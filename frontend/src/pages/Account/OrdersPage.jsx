@@ -13,6 +13,10 @@ import LoadingSpinner
 import AccountLayout
   from './AccountLayout';
 
+import {
+  printOrderReceipt,
+} from '../../utils/receiptGenerator';
+
 
 /*
 ==================================================
@@ -71,7 +75,7 @@ ORDER TRACKER
 ==================================================
 */
 
-function OrderTracker({
+export function OrderTracker({
   status,
 }) {
 
@@ -401,13 +405,18 @@ export default function OrdersPage() {
 
     loadOrders();
 
-
-    return () => {
-
-      active =
-        false;
+    const handleSync = () => {
+      loadOrders();
     };
 
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('somnera:order-updated', handleSync);
+
+    return () => {
+      active = false;
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('somnera:order-updated', handleSync);
+    };
   }, []);
 
 
@@ -531,10 +540,16 @@ export default function OrdersPage() {
 
 
                                   <strong>
-                                    #
-                                    {
-                                      orderId
-                                    }
+                                    <a
+                                      href={`#order/${orderId}`}
+                                      style={{
+                                        color: 'inherit',
+                                        textDecoration: 'none',
+                                      }}
+                                      title="View Order Details"
+                                    >
+                                      #{orderId}
+                                    </a>
                                   </strong>
 
                                 </div>
@@ -804,19 +819,13 @@ export default function OrdersPage() {
                                   onClick={
                                     () => {
 
-                                      window.location.hash =
-                                        `order/${orderId}`;
-
-
-                                      window.scrollTo({
-                                        top: 0,
-                                        behavior:
-                                          'smooth',
-                                      });
+                                      printOrderReceipt(
+                                        order,
+                                      );
                                     }
                                   }
                                 >
-                                  View Details
+                                  View Receipt
                                 </button>
 
                               </footer>

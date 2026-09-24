@@ -1,7 +1,59 @@
 import { createId, getAll, putOne } from '../db/database';
-import { getCurrentUserApi } from '../components/Account/authService';
+import { getCurrentUserApi, getMyOrdersApi } from '../components/Account/authService';
 import { getCartApi } from './cartService';
 import { api } from '../config/apiClient';
+
+export async function getPreviousAddressesApi() {
+  try {
+    const data = await api.get('/checkout/addresses');
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.addresses)) return data.addresses;
+  } catch (err) {
+    // Fallback to user-scoped orders
+  }
+
+  try {
+    const user = await getCurrentUserApi();
+    const orders = await getMyOrdersApi();
+    const unique = [];
+    const seen = new Set();
+    (Array.isArray(orders) ? orders : []).forEach((order) => {
+      // Scope strictly to current user id (IDOR defense-in-depth)
+      if (order.userId && String(order.userId) !== String(user.id)) return;
+      const addr = order.shippingAddress || {};
+      const fullAddress = order.fullAddress || addr.fullAddress || addr.address;
+      const city = order.city || addr.city;
+      const state = order.state || addr.state;
+      const pincode = order.pincode || addr.pincode;
+      if (!fullAddress || !city || !pincode) return;
+      const key = `${fullAddress}|${city}|${state}|${pincode}`.toLowerCase().trim();
+      if (seen.has(key)) return;
+      seen.add(key);
+      unique.push({
+        id: order.id,
+        user_id: user.id,
+        userId: user.id,
+        fullName:
+          addr.fullName ||
+          order.fullName ||
+          `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+          'Customer',
+        mobile: addr.mobile || order.mobile || user.mobile || '',
+        email: addr.email || order.email || user.email || '',
+        fullAddress,
+        address: fullAddress,
+        city,
+        state: state || '',
+        pincode,
+        gstNumber: addr.gstNumber || order.gstNumber || null,
+        createdAt: order.createdAt,
+      });
+    });
+    return unique;
+  } catch (_) {
+    return [];
+  }
+}
 
 export async function getAvailableCouponsApi() {
   try {
@@ -97,6 +149,22 @@ export async function initializeCheckoutApi(data) {
     id,
     userId: user.id,
     ...data,
+    shippingAddress: data.shippingAddress || {
+      fullName: data.fullName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      mobile: data.mobile || user.mobile || '',
+      email: data.email || user.email || '',
+      city: data.city || '',
+      state: data.state || '',
+      pincode: data.pincode || '',
+      fullAddress: data.fullAddress || '',
+      address: data.fullAddress || '',
+      gstNumber: data.gstNumber ? String(data.gstNumber).trim().toUpperCase() : null,
+    },
+    state: data.state || '',
+    city: data.city || '',
+    pincode: data.pincode || '',
+    fullAddress: data.fullAddress || '',
+    gstNumber: data.gstNumber ? String(data.gstNumber).trim().toUpperCase() : null,
     couponCode: coupon?.code || null,
     subtotal: cart.cartTotal,
     discountAmount: discount,

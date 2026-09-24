@@ -96,6 +96,25 @@ export const initializeCheckout = async (req, res, next) => {
 
     const isCod = String(paymentMethod).toUpperCase() === 'COD';
 
+    const resolvedGst = (
+      req.body.gstNumber ||
+      shippingAddress?.gstNumber ||
+      billingAddress?.gstNumber ||
+      ''
+    ).trim().toUpperCase() || null;
+
+    const mergedShippingAddress = {
+      ...(typeof shippingAddress === 'object' && shippingAddress !== null ? shippingAddress : {}),
+      fullName: req.body.fullName || shippingAddress?.fullName || `${req.user.firstName} ${req.user.lastName || ''}`.trim(),
+      mobile: req.body.mobile || shippingAddress?.mobile || shippingAddress?.phone || req.user.mobile || '',
+      email: req.body.email || shippingAddress?.email || req.user.email || '',
+      city: req.body.city || shippingAddress?.city || '',
+      state: req.body.state || shippingAddress?.state || '',
+      pincode: req.body.pincode || shippingAddress?.pincode || '',
+      fullAddress: req.body.fullAddress || req.body.address || shippingAddress?.fullAddress || shippingAddress?.address || '',
+      ...(resolvedGst ? { gstNumber: resolvedGst } : {}),
+    };
+
     // 4. Create Order in Database
     const order = await prisma.order.create({
       data: {
@@ -107,7 +126,7 @@ export const initializeCheckout = async (req, res, next) => {
         discountAmount,
         totalAmount,
         couponCode: validCoupon?.code || null,
-        shippingAddress: shippingAddress || {},
+        shippingAddress: mergedShippingAddress,
         billingAddress: billingAddress || null,
         items: {
           create: orderItemsData,

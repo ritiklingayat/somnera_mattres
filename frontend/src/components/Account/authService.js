@@ -148,8 +148,22 @@ export async function getMyOrdersApi() {
   }
 
   const user = await getCurrentUserApi();
+  const userName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
   return (await getAll('orders'))
     .filter((order) => String(order.userId) === String(user.id))
+    .map((order) => ({
+      ...order,
+      fullName: order.fullName || userName || 'Customer',
+      email: order.email || user.email || '',
+      mobile: order.mobile || user.mobile || '',
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        mobile: user.mobile,
+      },
+    }))
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
@@ -162,9 +176,22 @@ export async function getMyOrderByIdApi(orderId) {
   }
 
   const user = await getCurrentUserApi();
+  const userName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
   const order = (await getAll('orders')).find(
     (item) => String(item.id) === String(orderId) && String(item.userId) === String(user.id)
   );
   if (!order) throw new Error('Order not found.');
-  return order;
+  return {
+    ...order,
+    fullName: order.fullName || userName || 'Customer',
+    email: order.email || user.email || '',
+    mobile: order.mobile || user.mobile || '',
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      mobile: user.mobile,
+    },
+  };
 }

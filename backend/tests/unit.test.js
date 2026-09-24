@@ -12,6 +12,7 @@ import { emailService } from '../src/services/email.service.js';
 import { formatProduct } from '../src/modules/products/product.controller.js';
 import { formatCart, calculateProductUnitPrice } from '../src/modules/cart/cart.controller.js';
 import { requireRole } from '../src/middlewares/role.middleware.js';
+import prisma from '../src/config/prisma.js';
 
 test('1. Health Check Endpoint', async () => {
   const res = await request(app).get('/api/health');
@@ -368,5 +369,266 @@ test('21. Coupons API: Validates minimum order amount and calculates discount', 
     assert.match(resBelow.body.message, /minimum cart total/i);
   }
 });
+
+test('22. Admin Order Status: Rejects unauthenticated requests with 401', async () => {
+  const res = await request(app)
+    .put('/api/admin/orders/any-order-id/status')
+    .send({ orderStatus: 'PROCESSING' });
+  assert.equal(res.status, 401);
+  assert.equal(res.body.success, false);
+});
+
+test('23. Admin Order Status: Rejects non-admin user role with 403', async () => {
+  let regularUser = await prisma.user.findFirst({ where: { role: 'USER' } });
+  if (!regularUser) {
+    regularUser = await prisma.user.create({
+      data: {
+        firstName: 'Test',
+        lastName: 'User',
+        email: `testuser_${Date.now()}@somnera.com`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+  }
+  const userToken = jwt.sign(
+    { id: regularUser.id, email: regularUser.email, role: 'USER' },
+    env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  const res = await request(app)
+    .put('/api/admin/orders/any-order-id/status')
+    .set('Authorization', `Bearer ${userToken}`)
+    .send({ orderStatus: 'PROCESSING' });
+  assert.equal(res.status, 403);
+  assert.equal(res.body.success, false);
+});
+
+test('24. Admin Order Status: Validates order status input and rejects invalid statuses with 400', async () => {
+  let adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+  if (!adminUser) {
+    adminUser = await prisma.user.create({
+      data: {
+        firstName: 'Test',
+        lastName: 'Admin',
+        email: `testadmin_${Date.now()}@somnera.com`,
+        password: 'hashedpassword',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+  }
+  const adminToken = jwt.sign(
+    { id: adminUser.id, email: adminUser.email, role: 'ADMIN' },
+    env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  const res = await request(app)
+    .put('/api/admin/orders/any-order-id/status')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ orderStatus: 'INVALID_STATUS' });
+  assert.equal(res.status, 400);
+  assert.equal(res.body.success, false);
+  assert.match(res.body.message, /invalid order status/i);
+});
+
+test('25. Admin Order Status: Accepts valid statuses and handles non-existent order with 404', async () => {
+  let adminUser = await prisma.user.findFirst({ where: { role: 'ADMIN' } });
+  if (!adminUser) {
+    adminUser = await prisma.user.create({
+      data: {
+        firstName: 'Test',
+        lastName: 'Admin',
+        email: `testadmin_${Date.now()}@somnera.com`,
+        password: 'hashedpassword',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+  }
+  const adminToken = jwt.sign(
+    { id: adminUser.id, email: adminUser.email, role: 'ADMIN' },
+    env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+  const res = await request(app)
+    .put('/api/admin/orders/non-existent-order-id-12345/status')
+    .set('Authorization', `Bearer ${adminToken}`)
+    .send({ orderStatus: 'PROCESSING' });
+  assert.equal(res.status, 404);
+  assert.equal(res.body.success, false);
+  assert.match(res.body.message, /not found/i);
+});
+
+test('26. Order GST Number: Extracts and formats optional GST number from shipping address or metadata', async () => {
+  const sampleWithGst = {
+    id: 'ord-1',
+    totalAmount: 12000,
+    shippingAddress: {
+      fullName: 'John Doe',
+      city: 'Mumbai',
+      gstNumber: '27ABCDE1234F1Z5',
+    },
+  };
+  const sampleWithoutGst = {
+    id: 'ord-2',
+    totalAmount: 8000,
+    shippingAddress: {
+      fullName: 'Jane Smith',
+      city: 'Delhi',
+    },
+  };
+
+  const extractGst = (order) => {
+    const shipping = typeof order.shippingAddress === 'object' && order.shippingAddress !== null
+      ? order.shippingAddress
+      : {};
+    const billing = typeof order.billingAddress === 'object' && order.billingAddress !== null
+      ? order.billingAddress
+      : {};
+    return order.gstNumber || shipping.gstNumber || billing.gstNumber || null;
+  };
+
+  assert.equal(extractGst(sampleWithGst), '27ABCDE1234F1Z5');
+  assert.equal(extractGst(sampleWithoutGst), null);
+});
+
+test('27. User Address Scope & IDOR Protection: Scopes addresses to current_user.id and rejects unauthorized access', async () => {
+  // 1. Unauthenticated request to /api/checkout/addresses must return 401
+  const unauthRes = await request(app).get('/api/checkout/addresses');
+  assert.equal(unauthRes.status, 401);
+  assert.equal(unauthRes.body.success, false);
+
+  // 2. Create two isolated test users: User A and User B
+  const timestamp = Date.now();
+  const userA = await prisma.user.create({
+    data: {
+      firstName: 'Alice',
+      lastName: 'A',
+      email: `alice_${timestamp}@somnera.test`,
+      password: 'hashedpassword',
+      role: 'USER',
+      status: 'ACTIVE',
+    },
+  });
+
+  const userB = await prisma.user.create({
+    data: {
+      firstName: 'Bob',
+      lastName: 'B',
+      email: `bob_${timestamp}@somnera.test`,
+      password: 'hashedpassword',
+      role: 'USER',
+      status: 'ACTIVE',
+    },
+  });
+
+  const tokenA = jwt.sign(
+    { id: userA.id, email: userA.email, role: 'USER' },
+    env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  const tokenB = jwt.sign(
+    { id: userB.id, email: userB.email, role: 'USER' },
+    env.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  // User A initially has 0 orders: check clean empty state []
+  const emptyRes = await request(app)
+    .get('/api/checkout/addresses')
+    .set('Authorization', `Bearer ${tokenA}`);
+  assert.equal(emptyRes.status, 200);
+  assert.equal(emptyRes.body.success, true);
+  assert.deepEqual(emptyRes.body.data, []);
+
+  // Create an order for User B with User B's shipping address
+  await prisma.order.create({
+    data: {
+      userId: userB.id,
+      orderStatus: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      subtotal: 15000,
+      totalAmount: 15000,
+      shippingAddress: {
+        fullName: 'Bob B',
+        mobile: '9876543210',
+        email: userB.email,
+        fullAddress: '789 Bob Street, Bandra',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400050',
+      },
+    },
+  });
+
+  // User A attempts to view addresses, including an IDOR exploit attempt passing userB.id in query
+  const idorRes = await request(app)
+    .get(`/api/checkout/addresses?userId=${userB.id}&user_id=${userB.id}`)
+    .set('Authorization', `Bearer ${tokenA}`);
+  assert.equal(idorRes.status, 200);
+  assert.equal(idorRes.body.success, true);
+  // User A must NOT receive User B's address
+  assert.equal(idorRes.body.data.length, 0);
+
+  // User B queries addresses: receives only their own address
+  const userBRes = await request(app)
+    .get('/api/checkout/addresses')
+    .set('Authorization', `Bearer ${tokenB}`);
+  assert.equal(userBRes.status, 200);
+  assert.equal(userBRes.body.success, true);
+  assert.equal(userBRes.body.data.length, 1);
+  assert.equal(userBRes.body.data[0].user_id, userB.id);
+  assert.equal(userBRes.body.data[0].userId, userB.id);
+  assert.equal(userBRes.body.data[0].city, 'Mumbai');
+  assert.equal(userBRes.body.data[0].pincode, '400050');
+});
+
+test('28. Order Receipt Snapshot: Preserves frozen historical shipping address despite mutable user profile changes', async () => {
+  // Simulate an order snapshot captured at checkout
+  const orderSnapshot = {
+    id: 'ord-snapshot-123',
+    userId: 'user-xyz',
+    orderStatus: 'CONFIRMED',
+    paymentStatus: 'PAID',
+    subtotal: 20000,
+    totalAmount: 20000,
+    shippingAddress: {
+      fullName: 'Historical Name At Order Time',
+      email: 'original_order@example.com',
+      mobile: '9111111111',
+      fullAddress: 'Flat 101, Historical Heights, M.G. Road',
+      city: 'Pune',
+      state: 'Maharashtra',
+      pincode: '411001',
+      gstNumber: '27AABCS1429B1ZB',
+    },
+    // Mutable user profile at later date has changed
+    user: {
+      id: 'user-xyz',
+      firstName: 'Changed',
+      lastName: 'ProfileName',
+      email: 'new_profile_email@example.com',
+      mobile: '9999999999',
+    },
+  };
+
+  const { formatOrder } = await import('../src/modules/orders/order.controller.js');
+  const formatted = formatOrder(orderSnapshot);
+
+  // Historical snapshot must take precedence over mutable user profile
+  assert.equal(formatted.fullName, 'Historical Name At Order Time');
+  assert.equal(formatted.email, 'original_order@example.com');
+  assert.equal(formatted.mobile, '9111111111');
+  assert.equal(formatted.fullAddress, 'Flat 101, Historical Heights, M.G. Road');
+  assert.equal(formatted.city, 'Pune');
+  assert.equal(formatted.state, 'Maharashtra');
+  assert.equal(formatted.pincode, '411001');
+  assert.equal(formatted.gstNumber, '27AABCS1429B1ZB');
+});
+
+
 
 

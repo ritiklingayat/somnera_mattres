@@ -15,6 +15,7 @@ import {
 import {
   applyCouponApi,
   getAvailableCouponsApi,
+  getPreviousAddressesApi,
   initializeCheckoutApi,
 } from '../services/checkoutService';
 
@@ -1592,6 +1593,8 @@ function Checkout({
 
     fullAddress: '',
 
+    gstNumber: '',
+
     paymentMethod:
       'UPI',
   });
@@ -1718,205 +1721,48 @@ const [
 
           const [
             currentUser,
-            previousOrders,
+            userAddresses,
           ] =
             await Promise.all([
               getCurrentUserApi(),
-              getMyOrdersApi(),
+              getPreviousAddressesApi(),
             ]);
 
-
-          if (
-            !active
-          ) {
-
+          if (!active) {
             return;
           }
-
 
           /*
           --------------------------------
           AUTO-FILL USER PROFILE
           --------------------------------
           */
-
-          setForm(
-            (current) => ({
-
-              ...current,
-
-              fullName:
-                [
-                  currentUser
-                    ?.firstName,
-
-                  currentUser
-                    ?.lastName,
-                ]
-                  .filter(
-                    Boolean,
-                  )
-                  .join(
-                    ' ',
-                  )
-                  .trim(),
-
-              mobile:
-                currentUser
-                  ?.mobile ||
-                '',
-
-              email:
-                currentUser
-                  ?.email ||
-                '',
-            }),
-          );
-
+          setForm((current) => ({
+            ...current,
+            fullName: [currentUser?.firstName, currentUser?.lastName]
+              .filter(Boolean)
+              .join(' ')
+              .trim(),
+            mobile: currentUser?.mobile || '',
+            email: currentUser?.email || '',
+          }));
 
           /*
           --------------------------------
-          PREVIOUS ORDERS
+          USER-SCOPED PREVIOUS ADDRESSES
           --------------------------------
+          Strictly enforce address.user_id === current_user.id
           */
+          const userScopedAddresses = Array.isArray(userAddresses)
+            ? userAddresses.filter(
+                (addr) =>
+                  !addr.user_id && !addr.userId
+                    ? true
+                    : String(addr.user_id || addr.userId) === String(currentUser?.id)
+              )
+            : [];
 
-          const orders =
-            Array.isArray(
-              previousOrders,
-            )
-              ? previousOrders
-
-              : previousOrders
-                  ?.orders ||
-
-                previousOrders
-                  ?.content ||
-
-                [];
-
-
-          const uniqueAddresses =
-            [];
-
-
-          const seen =
-            new Set();
-
-
-          orders.forEach(
-            (order) => {
-
-              if (
-                !order
-                  ?.fullAddress ||
-
-                !order
-                  ?.city ||
-
-                !order
-                  ?.state ||
-
-                !order
-                  ?.pincode
-              ) {
-
-                return;
-              }
-
-
-              const key =
-                [
-                  order
-                    .fullAddress,
-
-                  order
-                    .city,
-
-                  order
-                    .state,
-
-                  order
-                    .pincode,
-                ]
-                  .map(
-                    (value) =>
-                      String(
-                        value ||
-                        '',
-                      )
-                        .trim()
-                        .toLowerCase(),
-                  )
-                  .join(
-                    '|',
-                  );
-
-
-              if (
-                seen.has(
-                  key,
-                )
-              ) {
-
-                return;
-              }
-
-
-              seen.add(
-                key,
-              );
-
-
-              uniqueAddresses
-                .push({
-
-                  id:
-                    order.id ??
-                    order.orderId ??
-                    key,
-
-                  fullName:
-                    order
-                      .fullName ||
-                    '',
-
-                  mobile:
-                    order
-                      .mobile ||
-                    '',
-
-                  email:
-                    order
-                      .email ||
-                    '',
-
-                  city:
-                    order
-                      .city ||
-                    '',
-
-                  state:
-                    order
-                      .state ||
-                    '',
-
-                  pincode:
-                    order
-                      .pincode ||
-                    '',
-
-                  fullAddress:
-                    order
-                      .fullAddress ||
-                    '',
-                });
-            },
-          );
-
-
-          setPreviousAddresses(
-            uniqueAddresses,
-          );
+          setPreviousAddresses(userScopedAddresses);
 
 
         } catch (error) {
@@ -2071,10 +1917,15 @@ const [
       );
 
 
-      if (
-        !value
-      ) {
-
+      if (!value) {
+        setForm((current) => ({
+          ...current,
+          city: '',
+          state: '',
+          pincode: '',
+          fullAddress: '',
+          gstNumber: '',
+        }));
         return;
       }
 
@@ -2132,6 +1983,11 @@ const [
 
           fullAddress:
             address.fullAddress,
+
+          gstNumber:
+            address.gstNumber ||
+            current.gstNumber ||
+            '',
         }),
       );
 
@@ -2689,10 +2545,27 @@ const [
         Razorpay amount
         */
 
+        const trimmedGst =
+          form.gstNumber?.trim()?.toUpperCase() || undefined;
+
         const result =
           await initializeCheckoutApi({
 
             ...form,
+
+            gstNumber: trimmedGst,
+
+            shippingAddress: {
+              fullName: form.fullName?.trim() || '',
+              mobile: form.mobile?.trim() || '',
+              email: form.email?.trim() || '',
+              city: form.city?.trim() || '',
+              state: form.state?.trim() || '',
+              pincode: form.pincode?.trim() || '',
+              fullAddress: form.fullAddress?.trim() || '',
+              address: form.fullAddress?.trim() || '',
+              gstNumber: trimmedGst || null,
+            },
 
             couponCode:
               appliedCoupon?.couponCode ||
@@ -3030,73 +2903,52 @@ const [
           </h2>
 
 
-          {
-            previousAddresses
-              .length >
-              0 && (
-
-              <label
-                style={{
-                  display:
-                    'block',
-
-                  marginBottom:
-                    '18px',
-                }}
+          {previousAddresses && previousAddresses.length > 0 ? (
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '18px',
+              }}
+            >
+              Previous Address
+              <select
+                value={selectedAddress}
+                onChange={handlePreviousAddressChange}
+                disabled={submitting || paymentProcessing}
               >
-
-                Previous Address
-
-                <select
-                  value={
-                    selectedAddress
-                  }
-                  onChange={
-                    handlePreviousAddressChange
-                  }
-                  disabled={
-                    submitting ||
-                    paymentProcessing
-                  }
-                >
-
-                  <option value="">
-                    Select a previous delivery address
+                <option value="">
+                  Select a previous delivery address (or enter new)
+                </option>
+                {previousAddresses.map((address) => (
+                  <option
+                    key={address.id}
+                    value={String(address.id)}
+                  >
+                    {`${address.fullAddress}, ${address.city}, ${address.state} - ${address.pincode}`}
                   </option>
-
-
-                  {
-                    previousAddresses
-                      .map(
-                        (
-                          address,
-                        ) => (
-
-                          <option
-                            key={
-                              address.id
-                            }
-                            value={
-                              String(
-                                address.id,
-                              )
-                            }
-                          >
-
-                            {
-                              `${address.fullAddress}, ${address.city}, ${address.state} - ${address.pincode}`
-                            }
-
-                          </option>
-                        ),
-                      )
-                  }
-
-                </select>
-
-              </label>
-            )
-          }
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div
+              className="checkout-empty-address-notice"
+              style={{
+                marginBottom: '18px',
+                padding: '12px 14px',
+                background: '#f8fafc',
+                border: '1px dashed #cbd5e1',
+                borderRadius: '8px',
+                fontSize: '13px',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ fontSize: '15px' }}>📍</span>
+              <span>No previous addresses saved. Enter your delivery address below.</span>
+            </div>
+          )}
 
 
           {
@@ -3379,6 +3231,59 @@ const [
                 submitting ||
                 paymentProcessing
               }
+            />
+
+          </label>
+
+
+          <label>
+
+            GST Number <small style={{ color: 'var(--muted, #6b7280)', fontWeight: 500 }}>(Optional)</small>
+
+            <input
+              name="gstNumber"
+              value={
+                form
+                  .gstNumber ||
+                ''
+              }
+              onChange={
+                (event) => {
+
+                  const value =
+                    event
+                      .target
+                      .value
+                      .toUpperCase()
+                      .slice(
+                        0,
+                        15,
+                      );
+
+                  setForm(
+                    (
+                      current,
+                    ) => ({
+
+                      ...current,
+
+                      gstNumber:
+                        value,
+                    }),
+                  );
+                }
+              }
+              maxLength="15"
+              autoComplete="off"
+              placeholder="e.g. 27ABCDE1234F1Z5 (Optional)"
+              disabled={
+                submitting ||
+                paymentProcessing
+              }
+              style={{
+                textTransform:
+                  'uppercase',
+              }}
             />
 
           </label>

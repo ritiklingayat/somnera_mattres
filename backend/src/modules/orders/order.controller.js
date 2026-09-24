@@ -1,17 +1,100 @@
 import prisma from '../../config/prisma.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
+export const formatOrder = (order, reqUser = null) => {
+  if (!order) return order;
+  let shipping = order.shippingAddress;
+  if (typeof shipping === 'string') {
+    try { shipping = JSON.parse(shipping); } catch (_) { shipping = {}; }
+  } else if (!shipping || typeof shipping !== 'object') {
+    shipping = {};
+  }
+  let billing = order.billingAddress;
+  if (typeof billing === 'string') {
+    try { billing = JSON.parse(billing); } catch (_) { billing = {}; }
+  } else if (!billing || typeof billing !== 'object') {
+    billing = {};
+  }
+
+  const user = order.user || reqUser || {};
+  const userFullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  const shippingFullName =
+    shipping.fullName ||
+    [shipping.firstName, shipping.lastName].filter(Boolean).join(' ').trim();
+
+  const fullName =
+    shippingFullName ||
+    (order.fullName && order.fullName !== 'Customer' ? order.fullName : '') ||
+    userFullName ||
+    order.name ||
+    'Customer';
+
+  const email = shipping.email || order.email || user.email || '';
+  const mobile = shipping.mobile || shipping.phone || order.mobile || order.phone || user.mobile || '';
+  const gstNumber = shipping.gstNumber || order.gstNumber || billing.gstNumber || null;
+
+  const fullAddress =
+    shipping.fullAddress ||
+    shipping.address ||
+    order.fullAddress ||
+    [shipping.address, shipping.apartment, shipping.city, shipping.state, shipping.pincode].filter(Boolean).join(', ') ||
+    '';
+  const state = shipping.state || order.state || '';
+  const city = shipping.city || order.city || '';
+  const pincode = shipping.pincode || shipping.postalCode || shipping.pin || order.pincode || '';
+
+  return {
+    ...order,
+    fullName,
+    email,
+    mobile,
+    fullAddress,
+    state,
+    city,
+    pincode,
+    gstNumber,
+    shippingAddress: {
+      ...shipping,
+      fullName: shipping.fullName || fullName,
+      email: shipping.email || email,
+      mobile: shipping.mobile || mobile,
+      fullAddress: shipping.fullAddress || fullAddress,
+      state: shipping.state || state,
+      city: shipping.city || city,
+      pincode: shipping.pincode || pincode,
+      gstNumber: shipping.gstNumber || gstNumber,
+    },
+    billingAddress: billing,
+    user: {
+      id: user.id || order.userId,
+      firstName: user.firstName || (fullName !== 'Customer' ? fullName.split(' ')[0] : ''),
+      lastName: user.lastName || (fullName !== 'Customer' ? fullName.split(' ').slice(1).join(' ') : ''),
+      email: email || user.email,
+      mobile: mobile || user.mobile,
+    },
+  };
+};
+
 export const getMyOrders = async (req, res, next) => {
   try {
     const orders = await prisma.order.findMany({
       where: { userId: req.user.id },
       include: {
         items: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            mobile: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return sendSuccess(res, orders, 'Orders retrieved successfully.');
+    return sendSuccess(res, orders.map((o) => formatOrder(o, req.user)), 'Orders retrieved successfully.');
   } catch (error) {
     next(error);
   }
@@ -28,6 +111,15 @@ export const getMyOrderById = async (req, res, next) => {
       },
       include: {
         items: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            mobile: true,
+          },
+        },
       },
     });
 
@@ -35,7 +127,7 @@ export const getMyOrderById = async (req, res, next) => {
       return sendError(res, 'Order not found.', 404);
     }
 
-    return sendSuccess(res, order, 'Order details retrieved.');
+    return sendSuccess(res, formatOrder(order, req.user), 'Order details retrieved.');
   } catch (error) {
     next(error);
   }
