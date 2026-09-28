@@ -501,89 +501,98 @@ test('27. User Address Scope & IDOR Protection: Scopes addresses to current_user
   assert.equal(unauthRes.body.success, false);
 
   // 2. Create two isolated test users: User A and User B
-  const timestamp = Date.now();
-  const userA = await prisma.user.create({
-    data: {
-      firstName: 'Alice',
-      lastName: 'A',
-      email: `alice_${timestamp}@somnera.test`,
-      password: 'hashedpassword',
-      role: 'USER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const userB = await prisma.user.create({
-    data: {
-      firstName: 'Bob',
-      lastName: 'B',
-      email: `bob_${timestamp}@somnera.test`,
-      password: 'hashedpassword',
-      role: 'USER',
-      status: 'ACTIVE',
-    },
-  });
-
-  const tokenA = jwt.sign(
-    { id: userA.id, email: userA.email, role: 'USER' },
-    env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-
-  const tokenB = jwt.sign(
-    { id: userB.id, email: userB.email, role: 'USER' },
-    env.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-
-  // User A initially has 0 orders: check clean empty state []
-  const emptyRes = await request(app)
-    .get('/api/checkout/addresses')
-    .set('Authorization', `Bearer ${tokenA}`);
-  assert.equal(emptyRes.status, 200);
-  assert.equal(emptyRes.body.success, true);
-  assert.deepEqual(emptyRes.body.data, []);
-
-  // Create an order for User B with User B's shipping address
-  await prisma.order.create({
-    data: {
-      userId: userB.id,
-      orderStatus: 'CONFIRMED',
-      paymentStatus: 'PAID',
-      subtotal: 15000,
-      totalAmount: 15000,
-      shippingAddress: {
-        fullName: 'Bob B',
-        mobile: '9876543210',
-        email: userB.email,
-        fullAddress: '789 Bob Street, Bandra',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        pincode: '400050',
+  let userA, userB;
+  try {
+    const timestamp = Date.now();
+    userA = await prisma.user.create({
+      data: {
+        firstName: 'Alice',
+        lastName: 'A',
+        email: `alice_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
       },
-    },
-  });
+    });
 
-  // User A attempts to view addresses, including an IDOR exploit attempt passing userB.id in query
-  const idorRes = await request(app)
-    .get(`/api/checkout/addresses?userId=${userB.id}&user_id=${userB.id}`)
-    .set('Authorization', `Bearer ${tokenA}`);
-  assert.equal(idorRes.status, 200);
-  assert.equal(idorRes.body.success, true);
-  // User A must NOT receive User B's address
-  assert.equal(idorRes.body.data.length, 0);
+    userB = await prisma.user.create({
+      data: {
+        firstName: 'Bob',
+        lastName: 'B',
+        email: `bob_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
 
-  // User B queries addresses: receives only their own address
-  const userBRes = await request(app)
-    .get('/api/checkout/addresses')
-    .set('Authorization', `Bearer ${tokenB}`);
-  assert.equal(userBRes.status, 200);
-  assert.equal(userBRes.body.success, true);
-  assert.equal(userBRes.body.data.length, 1);
-  assert.equal(userBRes.body.data[0].user_id, userB.id);
-  assert.equal(userBRes.body.data[0].userId, userB.id);
-  assert.equal(userBRes.body.data[0].city, 'Mumbai');
-  assert.equal(userBRes.body.data[0].pincode, '400050');
+    const tokenA = jwt.sign(
+      { id: userA.id, email: userA.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const tokenB = jwt.sign(
+      { id: userB.id, email: userB.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // User A initially has 0 orders: check clean empty state []
+    const emptyRes = await request(app)
+      .get('/api/checkout/addresses')
+      .set('Authorization', `Bearer ${tokenA}`);
+    assert.equal(emptyRes.status, 200);
+    assert.equal(emptyRes.body.success, true);
+    assert.deepEqual(emptyRes.body.data, []);
+
+    // Create an order for User B with User B's shipping address
+    await prisma.order.create({
+      data: {
+        userId: userB.id,
+        orderStatus: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        subtotal: 15000,
+        totalAmount: 15000,
+        shippingAddress: {
+          fullName: 'Bob B',
+          mobile: '9876543210',
+          email: userB.email,
+          fullAddress: '789 Bob Street, Bandra',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400050',
+        },
+      },
+    });
+
+    // User A attempts to view addresses, including an IDOR exploit attempt passing userB.id in query
+    const idorRes = await request(app)
+      .get(`/api/checkout/addresses?userId=${userB.id}&user_id=${userB.id}`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    assert.equal(idorRes.status, 200);
+    assert.equal(idorRes.body.success, true);
+    // User A must NOT receive User B's address
+    assert.equal(idorRes.body.data.length, 0);
+
+    // User B queries addresses: receives only their own address
+    const userBRes = await request(app)
+      .get('/api/checkout/addresses')
+      .set('Authorization', `Bearer ${tokenB}`);
+    assert.equal(userBRes.status, 200);
+    assert.equal(userBRes.body.success, true);
+    assert.equal(userBRes.body.data.length, 1);
+    assert.equal(userBRes.body.data[0].user_id, userB.id);
+    assert.equal(userBRes.body.data[0].userId, userB.id);
+    assert.equal(userBRes.body.data[0].city, 'Mumbai');
+    assert.equal(userBRes.body.data[0].pincode, '400050');
+  } finally {
+    const ids = [userA?.id, userB?.id].filter(Boolean);
+    if (ids.length > 0) {
+      await prisma.order.deleteMany({ where: { userId: { in: ids } } });
+      await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }
+  }
 });
 
 test('28. Order Receipt Snapshot: Preserves frozen historical shipping address despite mutable user profile changes', async () => {
