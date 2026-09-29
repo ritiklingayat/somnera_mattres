@@ -11,6 +11,10 @@ import {
 } from '../../utils/productFilterUtils';
 
 import {
+  getAvailableThicknesses,
+} from '../../utils/productUtils';
+
+import {
   useAuth,
 } from '../Account';
 
@@ -68,23 +72,17 @@ export function ProductCard({
   ==================================================
   */
 
-  const thicknessKeys =
-    Object.keys(
-      product.prices || {},
-    );
-
+  const thicknessKeys = getAvailableThicknesses(product);
 
   const defaultThickness =
     thicknessKeys.length > 0
       ? thicknessKeys[0]
-      : '6';
-
+      : '';
 
   const [
     selectedSize,
     setSelectedSize,
   ] = useState('72x60');
-
 
   const [
     selectedThickness,

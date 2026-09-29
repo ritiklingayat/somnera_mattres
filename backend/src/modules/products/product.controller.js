@@ -1,6 +1,28 @@
 import prisma from '../../config/prisma.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 
+export const sanitizePrices = (rawPrices) => {
+  if (!rawPrices) return {};
+  let parsed = rawPrices;
+  if (typeof rawPrices === 'string') {
+    try {
+      parsed = JSON.parse(rawPrices);
+    } catch {
+      return {};
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return {};
+  const cleaned = {};
+  for (const [key, val] of Object.entries(parsed)) {
+    if (val === null || val === undefined || val === '') continue;
+    const num = Number(val);
+    if (!Number.isNaN(num) && Number.isFinite(num) && num > 0) {
+      cleaned[key] = num;
+    }
+  }
+  return cleaned;
+};
+
 export const formatProduct = (p) => {
   if (!p) return null;
   return {
@@ -26,7 +48,7 @@ export const formatProduct = (p) => {
     sellingPrice: p.sellingPrice,
     offerPrice: p.offerPrice,
     price: p.price ?? p.sellingPrice ?? p.offerPrice,
-    prices: p.prices || {},
+    prices: sanitizePrices(p.prices),
     stock: p.stock,
     stockQuantity: p.stockQuantity ?? p.stock,
     packSize: p.packSize || 1,

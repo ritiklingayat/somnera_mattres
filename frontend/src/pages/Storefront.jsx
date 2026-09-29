@@ -9,6 +9,10 @@ import {
 } from '../data/productsData';
 
 import {
+  getAvailableThicknesses,
+} from '../utils/productUtils';
+
+import {
   siteConfig,
 } from '../config/siteConfig';
 
@@ -121,11 +125,7 @@ function ProductCard({
   addToCart,
 }) {
 
-  const thicknesses =
-    Object.keys(
-      product.prices || {},
-    );
-
+  const thicknesses = getAvailableThicknesses(product);
 
   const [
     size,
@@ -134,13 +134,12 @@ function ProductCard({
     '72x60',
   );
 
-
   const [
     thickness,
     setThickness,
   ] = useState(
     thicknesses[0] ||
-    '6',
+    '',
   );
 
 

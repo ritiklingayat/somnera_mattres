@@ -20,6 +20,10 @@ import {
   getPrice,
 } from '../data/productsData';
 
+import {
+  getAvailableThicknesses,
+} from '../utils/productUtils';
+
 import LoadingSpinner
   from '../components/LoadingSpinner/LoadingSpinner';
 
@@ -400,17 +404,12 @@ export function WishlistPage({
                       (product) => {
 
                         const thicknessKeys =
-                          Object.keys(
-                            product.prices ||
-                            {},
-                          );
-
+                          getAvailableThicknesses(product);
 
                         const defaultThickness =
-                          thicknessKeys.length >
-                          0
+                          thicknessKeys.length > 0
                             ? thicknessKeys[0]
-                            : '6';
+                            : '';
 
 
                         const price =

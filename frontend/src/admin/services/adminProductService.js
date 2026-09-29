@@ -2,15 +2,19 @@ import { hydrate } from '../../repositories/productRepository';
 import { api } from '../../config/apiClient';
 
 const numberOrNull = (value) => value === '' || value == null || !Number.isFinite(Number(value)) ? null : Number(value);
+const positiveRateOrNull = (value) => {
+  const num = numberOrNull(value);
+  return num != null && num > 0 ? num : null;
+};
 
 export function buildProductRequest(draft) {
   const prices = {};
   [4, 5, 6, 8].forEach((size) => {
-    const value = numberOrNull(draft[`price${size}`]);
+    const value = positiveRateOrNull(draft[`price${size}`]);
     if (value != null) prices[size] = value;
   });
-  if (draft.pricePerSqFt != null && draft.pricePerSqFt !== '') {
-    prices.pricePerSqFt = numberOrNull(draft.pricePerSqFt);
+  if (draft.pricePerSqFt != null && draft.pricePerSqFt !== '' && Number(draft.pricePerSqFt) > 0) {
+    prices.pricePerSqFt = Number(draft.pricePerSqFt);
   }
   const effectivePrice = numberOrNull(draft.offerPrice) ?? numberOrNull(draft.sellingPrice);
   return {
@@ -21,10 +25,14 @@ export function buildProductRequest(draft) {
     description: draft.description?.trim() || draft.shortDescription?.trim() || '',
     shortDescription: draft.shortDescription?.trim() || draft.description?.trim() || '',
     materials: typeof draft.materials === 'string' ? draft.materials.split(',').map((value) => value.trim()).filter(Boolean) : (draft.materials || []),
-    price4Inch: numberOrNull(draft.price4),
-    price5Inch: numberOrNull(draft.price5),
-    price6Inch: numberOrNull(draft.price6),
-    price8Inch: numberOrNull(draft.price8),
+    price4: positiveRateOrNull(draft.price4),
+    price5: positiveRateOrNull(draft.price5),
+    price6: positiveRateOrNull(draft.price6),
+    price8: positiveRateOrNull(draft.price8),
+    price4Inch: positiveRateOrNull(draft.price4),
+    price5Inch: positiveRateOrNull(draft.price5),
+    price6Inch: positiveRateOrNull(draft.price6),
+    price8Inch: positiveRateOrNull(draft.price8),
     prices,
     mrp: numberOrNull(draft.mrp),
     sellingPrice: numberOrNull(draft.sellingPrice),
@@ -53,7 +61,7 @@ export function buildProductRequest(draft) {
 function buildFormData(request, imageFile, galleryFiles = [], galleryVideoFiles = []) {
   const fd = new FormData();
   Object.entries(request).forEach(([key, val]) => {
-    if (val !== undefined && val !== null) {
+    if (val !== undefined && val !== null && val !== '') {
       if (typeof val === 'object' && !(val instanceof Blob) && !(val instanceof File)) {
         fd.append(key, JSON.stringify(val));
       } else {

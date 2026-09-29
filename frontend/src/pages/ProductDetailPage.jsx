@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -11,6 +12,10 @@ import {
 import {
   getPrice,
 } from '../data/productsData';
+
+import {
+  getAvailableThicknesses,
+} from '../utils/productUtils';
 
 import {
   ProductImageGallery,
@@ -159,7 +164,7 @@ export default function ProductDetailPage({
   const [
     selectedThickness,
     setSelectedThickness,
-  ] = useState('6');
+  ] = useState('');
 
 
   const [
@@ -338,45 +343,23 @@ export default function ProductDetailPage({
   ==================================================
   */
 
-  const thicknessKeys =
-    Object.keys(
-      product?.prices || {},
-    );
-
+  const thicknessKeys = useMemo(
+    () => getAvailableThicknesses(product),
+    [product?.prices],
+  );
 
   useEffect(() => {
-
-    const keys =
-      Object.keys(
-        product?.prices || {},
-      );
-
-
-    if (
-      keys.length > 0
-    ) {
-
-      setSelectedThickness(
-        (previous) => {
-
-          if (
-            keys.includes(
-              String(previous),
-            )
-          ) {
-
-            return String(
-              previous,
-            );
-          }
-
-
-          return keys[0];
-        },
-      );
+    if (thicknessKeys.length > 0) {
+      setSelectedThickness((previous) => {
+        if (previous && thicknessKeys.includes(String(previous))) {
+          return String(previous);
+        }
+        return thicknessKeys[0];
+      });
+    } else {
+      setSelectedThickness('');
     }
-
-  }, [product]);
+  }, [thicknessKeys]);
 
 
   const configuredSizeIds =
@@ -1049,19 +1032,21 @@ export default function ProductDetailPage({
                     </label>
 
                     {isMattress ? (
-                      <label className="mattress-config-field">
-                        <span>Step 5: Mattress Thickness</span>
-                        <select
-                          value={selectedThickness}
-                          onChange={(event) => setSelectedThickness(event.target.value)}
-                        >
-                          {thicknessKeys.map((thickness) => (
-                            <option key={thickness} value={thickness}>
-                              {thickness} inch
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      thicknessKeys.length > 0 ? (
+                        <label className="mattress-config-field">
+                          <span>Step 5: Mattress Thickness</span>
+                          <select
+                            value={selectedThickness}
+                            onChange={(event) => setSelectedThickness(event.target.value)}
+                          >
+                            {thicknessKeys.map((thickness) => (
+                              <option key={thickness} value={thickness}>
+                                {thickness} inch
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null
                     ) : (
                       <div className="mattress-config-field">
                         <span>Step 5: Area &amp; Rate</span>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getPrice, sizes } from '../../data/productsData';
+import { getAvailableThicknesses } from '../../utils/productUtils';
 
 export function ProductQuickViewModal({ product, isOpen, onClose, addToCart }) {
-  const thicknessKeys = Object.keys(product?.prices || {});
+  const thicknessKeys = getAvailableThicknesses(product);
   const defaultThickness = thicknessKeys.length > 0 ? thicknessKeys[0] : '6';
 
   const [selectedSize, setSelectedSize] = useState('72x60');
@@ -10,7 +11,7 @@ export function ProductQuickViewModal({ product, isOpen, onClose, addToCart }) {
 
   useEffect(() => {
     if (product) {
-      const keys = Object.keys(product.prices || {});
+      const keys = getAvailableThicknesses(product);
       if (keys.length > 0) setSelectedThickness(keys[0]);
     }
   }, [product]);

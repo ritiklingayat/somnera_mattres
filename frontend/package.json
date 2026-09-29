@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/utils/pillowFilterUtils.test.js",
+    "test": "node --test src/utils/pillowFilterUtils.test.js src/utils/productUtils.test.js",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -360,16 +360,22 @@ export const createAdminProduct = async (req, res, next) => {
       return field;
     };
 
-    const prices = typeof body.prices === 'string' ? JSON.parse(body.prices || '{}') : (body.prices || {});
-    if (body.price4) prices['4'] = Number(body.price4);
-    if (body.price5) prices['5'] = Number(body.price5);
-    if (body.price6) prices['6'] = Number(body.price6);
-    if (body.price8) prices['8'] = Number(body.price8);
-    if (body.pricePerSqFt !== undefined && body.pricePerSqFt !== null && body.pricePerSqFt !== '') {
-      prices.pricePerSqFt = Number(body.pricePerSqFt);
-    } else if (!prices.pricePerSqFt && (body.productSection === 'PROTECTOR' || body.productType === 'PROTECTOR')) {
-      prices.pricePerSqFt = 75;
+    const cleanPrices = {};
+    const rawPrices = typeof body.prices === 'string' ? JSON.parse(body.prices || '{}') : (body.prices || {});
+    ['4', '5', '6', '8'].forEach((size) => {
+      const val = body[`price${size}`] ?? body[`price${size}Inch`] ?? rawPrices[size] ?? rawPrices[Number(size)];
+      if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val)) && Number(val) > 0) {
+        cleanPrices[size] = Number(val);
+      }
+    });
+    if (rawPrices.pricePerSqFt !== undefined && rawPrices.pricePerSqFt !== null && rawPrices.pricePerSqFt !== '' && Number(rawPrices.pricePerSqFt) > 0) {
+      cleanPrices.pricePerSqFt = Number(rawPrices.pricePerSqFt);
+    } else if (body.pricePerSqFt !== undefined && body.pricePerSqFt !== null && body.pricePerSqFt !== '' && Number(body.pricePerSqFt) > 0) {
+      cleanPrices.pricePerSqFt = Number(body.pricePerSqFt);
+    } else if (!cleanPrices.pricePerSqFt && (body.productSection === 'PROTECTOR' || body.productType === 'PROTECTOR')) {
+      cleanPrices.pricePerSqFt = 75;
     }
+    const prices = cleanPrices;
 
     const effectivePrice = body.offerPrice ? Number(body.offerPrice) : (body.sellingPrice ? Number(body.sellingPrice) : (body.price ? Number(body.price) : null));
 
@@ -498,19 +504,28 @@ export const updateAdminProduct = async (req, res, next) => {
       return field;
     };
 
-    let prices = existing.prices || {};
-    if (body.prices) {
-      prices = typeof body.prices === 'string' ? JSON.parse(body.prices) : body.prices;
+    const cleanPrices = {};
+    const rawPrices = body.prices
+      ? (typeof body.prices === 'string' ? JSON.parse(body.prices) : body.prices)
+      : (existing.prices || {});
+    ['4', '5', '6', '8'].forEach((size) => {
+      const hasDirectInput = body[`price${size}`] !== undefined || body[`price${size}Inch`] !== undefined;
+      const val = hasDirectInput
+        ? (body[`price${size}`] ?? body[`price${size}Inch`])
+        : (rawPrices[size] ?? rawPrices[Number(size)]);
+      if (val !== undefined && val !== null && val !== '' && !isNaN(Number(val)) && Number(val) > 0) {
+        cleanPrices[size] = Number(val);
+      }
+    });
+    const sqFtInput = body.pricePerSqFt !== undefined
+      ? body.pricePerSqFt
+      : rawPrices.pricePerSqFt;
+    if (sqFtInput !== undefined && sqFtInput !== null && sqFtInput !== '' && Number(sqFtInput) > 0) {
+      cleanPrices.pricePerSqFt = Number(sqFtInput);
+    } else if (!cleanPrices.pricePerSqFt && (existing.productSection === 'PROTECTOR' || existing.productType === 'PROTECTOR' || body.productSection === 'PROTECTOR')) {
+      cleanPrices.pricePerSqFt = 75;
     }
-    if (body.price4 !== undefined) prices['4'] = Number(body.price4);
-    if (body.price5 !== undefined) prices['5'] = Number(body.price5);
-    if (body.price6 !== undefined) prices['6'] = Number(body.price6);
-    if (body.price8 !== undefined) prices['8'] = Number(body.price8);
-    if (body.pricePerSqFt !== undefined && body.pricePerSqFt !== null && body.pricePerSqFt !== '') {
-      prices.pricePerSqFt = Number(body.pricePerSqFt);
-    } else if (!prices.pricePerSqFt && (existing.productSection === 'PROTECTOR' || existing.productType === 'PROTECTOR' || body.productSection === 'PROTECTOR')) {
-      prices.pricePerSqFt = 75;
-    }
+    const prices = cleanPrices;
 
     const effectivePrice = body.offerPrice !== undefined ? Number(body.offerPrice) : (body.sellingPrice !== undefined ? Number(body.sellingPrice) : (body.price !== undefined ? Number(body.price) : existing.price));
 

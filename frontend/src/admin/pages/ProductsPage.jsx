@@ -476,6 +476,12 @@ PRODUCT → FORM MODEL
 ==================================================
 */
 
+const getValidRateInput = (val) => {
+  if (val === null || val === undefined || val === '') return '';
+  const num = Number(val);
+  return !Number.isNaN(num) && num > 0 ? String(val) : '';
+};
+
 function toFormProduct(
   product,
   categories,
@@ -615,24 +621,16 @@ function toFormProduct(
         : [],
 
     price4:
-      product.prices?.[4] ??
-      product.price4Inch ??
-      '',
+      getValidRateInput(product.prices?.['4'] ?? product.prices?.[4] ?? product.price4Inch),
 
     price5:
-      product.prices?.[5] ??
-      product.price5Inch ??
-      '',
+      getValidRateInput(product.prices?.['5'] ?? product.prices?.[5] ?? product.price5Inch),
 
     price6:
-      product.prices?.[6] ??
-      product.price6Inch ??
-      '',
+      getValidRateInput(product.prices?.['6'] ?? product.prices?.[6] ?? product.price6Inch),
 
     price8:
-      product.prices?.[8] ??
-      product.price8Inch ??
-      '',
+      getValidRateInput(product.prices?.['8'] ?? product.prices?.[8] ?? product.price8Inch),
 
     pricePerSqFt:
       product.prices?.pricePerSqFt ??

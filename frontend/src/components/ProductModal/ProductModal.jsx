@@ -1,14 +1,19 @@
 import { useEffect, useState } from "react";
 import { getPrice, sizes } from "../../data/productsData";
 import { siteConfig } from "../../config/siteConfig";
+import { getAvailableThicknesses } from "../../utils/productUtils";
 import "./ProductModal.css";
 
 export default function ProductModal({ product, onClose }) {
-  const thicknesses = product?.prices && Object.keys(product.prices).length > 0
-    ? Object.keys(product.prices)
-    : ["6"];
+  const thicknesses = getAvailableThicknesses(product);
   const [size, setSize] = useState("72x60");
   const [thickness, setThickness] = useState(thicknesses[0] || "6");
+
+  useEffect(() => {
+    if (thicknesses.length > 0 && !thicknesses.includes(thickness)) {
+      setThickness(thicknesses[0]);
+    }
+  }, [thicknesses, thickness]);
 
   useEffect(() => {
     const closeOnEscape = (event) => event.key === "Escape" && onClose();
@@ -52,20 +57,22 @@ export default function ProductModal({ product, onClose }) {
               <b>{product?.firmness}</b> feel
             </span>
           </div>
-          <div className="selector">
-            <label>Choose a thickness</label>
-            <div>
-              {thicknesses.map((value) => (
-                <button
-                  key={value}
-                  onClick={() => setThickness(value)}
-                  className={thickness === value ? "active" : ""}
-                >
-                  {value}&quot;
-                </button>
-              ))}
+          {thicknesses.length > 0 && (
+            <div className="selector">
+              <label>Choose a thickness</label>
+              <div>
+                {thicknesses.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => setThickness(value)}
+                    className={thickness === value ? "active" : ""}
+                  >
+                    {value}&quot;
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div className="selector">
             <label>Choose a size</label>
             <select

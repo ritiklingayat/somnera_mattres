@@ -638,6 +638,35 @@ test('28. Order Receipt Snapshot: Preserves frozen historical shipping address d
   assert.equal(formatted.gstNumber, '27AABCS1429B1ZB');
 });
 
+test('29. Product Thickness Pricing: Sanitize prices to exclude empty, null, or zero thickness variants', () => {
+  const legacyProduct = {
+    id: 'prod-legacy-1',
+    name: 'Somnera Ortho Mattress',
+    productType: 'MATTRESS',
+    prices: {
+      '4': 250,
+      '5': 0,
+      '6': '',
+      '8': 350,
+      invalid: null,
+      pricePerSqFt: 0,
+    },
+  };
 
+  const formatted = formatProduct(legacyProduct);
+  assert.deepEqual(formatted.prices, { '4': 250, '8': 350 });
 
-
+  const stringifiedProduct = {
+    id: 'prod-legacy-2',
+    name: 'Somnera Hybrid Mattress',
+    productType: 'MATTRESS',
+    prices: JSON.stringify({
+      '4': '220',
+      '5': null,
+      '6': 0,
+      '8': '320',
+    }),
+  };
+  const formattedStr = formatProduct(stringifiedProduct);
+  assert.deepEqual(formattedStr.prices, { '4': 220, '8': 320 });
+});
