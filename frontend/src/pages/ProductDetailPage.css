@@ -187,6 +187,19 @@
   color: #f59e0b;
 }
 
+.product-detail-rating .rating-link-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.product-detail-rating .rating-link-wrap:hover {
+  opacity: 0.85;
+}
+
 .product-detail-rating strong {
   color: #111827;
   font-size: 0.95rem;

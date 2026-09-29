@@ -63,6 +63,8 @@ export const formatProduct = (p) => {
     tech: p.tech || [],
     feels: p.feels || [],
     availableSizes: p.availableSizes || [],
+    rating: p.rating != null ? Number(p.rating) : null,
+    reviewCount: p.reviewCount != null ? Number(p.reviewCount) : 0,
     isActive: p.isActive,
     active: p.isActive,
     isFeatured: p.isFeatured,

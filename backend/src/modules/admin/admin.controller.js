@@ -757,6 +757,9 @@ const formatAdminOrder = (order) => {
   const city = shipping.city || order.city || '';
   const pincode = shipping.pincode || shipping.postalCode || shipping.pin || order.pincode || '';
 
+  const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+  const receiptUrl = isPaid ? `/api/orders/${order.id}/receipt` : null;
+
   return {
     ...order,
     fullName,
@@ -767,6 +770,10 @@ const formatAdminOrder = (order) => {
     city,
     pincode,
     gstNumber,
+    receipt_url: receiptUrl,
+    receiptUrl,
+    invoiceUrl: receiptUrl,
+    isReceiptAvailable: isPaid,
     shippingAddress: {
       ...shipping,
       fullName: shipping.fullName || fullName,

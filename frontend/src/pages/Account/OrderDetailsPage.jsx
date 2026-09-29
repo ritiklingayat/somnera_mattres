@@ -19,6 +19,7 @@ import {
 
 import {
   printOrderReceipt,
+  isOrderPaid,
 } from '../../utils/receiptGenerator';
 
 
@@ -784,13 +785,15 @@ export default function OrderDetailsPage({
             marginTop: '20px',
           }}
         >
-          <button
-            type="button"
-            className="account-submit-btn"
-            onClick={() => printOrderReceipt(order)}
-          >
-            View Receipt
-          </button>
+          {isOrderPaid(order) && (
+            <button
+              type="button"
+              className="account-submit-btn"
+              onClick={() => printOrderReceipt(order)}
+            >
+              View Receipt
+            </button>
+          )}
 
           <a
             href="#orders"

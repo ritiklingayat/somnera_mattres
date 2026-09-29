@@ -1,4 +1,5 @@
 import StatusBadge from './StatusBadge';
+import { isOrderPaid } from '../../utils/receiptGenerator';
 
 const SUBSEQUENT_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED'];
 
@@ -36,7 +37,7 @@ export default function OrderTable({
               <StatusBadge status={order.orderStatus || order.status} />
             </span>
             <span className="receipt-col">
-              {onPrint && (
+              {isOrderPaid(order) && onPrint ? (
                 <button
                   type="button"
                   className="admin-print-btn"
@@ -44,6 +45,8 @@ export default function OrderTable({
                 >
                   Print
                 </button>
+              ) : (
+                <span className="receipt-unavailable">—</span>
               )}
             </span>
             <span className="row-actions">

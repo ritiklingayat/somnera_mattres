@@ -1419,3 +1419,10 @@
   color: var(--admin-muted);
   font-size: 0.75rem;
 }
+
+.receipt-unavailable {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0 4px;
+}

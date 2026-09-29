@@ -66,6 +66,7 @@ model User {
   wishlist    Wishlist?
   orders      Order[]
   otps        OtpVerification[]
+  reviews     Review[]
 
   @@index([email])
 }
@@ -153,6 +154,8 @@ model Product {
   tech             Json?
   feels            Json?
   availableSizes   Json?
+  rating           Float?
+  reviewCount      Int             @default(0)
   isActive         Boolean         @default(true)
   isFeatured       Boolean         @default(false)
   showOnHomepage   Boolean         @default(false)
@@ -165,6 +168,7 @@ model Product {
   cartItems        CartItem[]
   wishlistItems    WishlistItem[]
   orderItems       OrderItem[]
+  reviews          Review[]
 
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -337,4 +341,24 @@ model Offer {
   updatedAt       DateTime  @updatedAt
 
   @@index([isActive])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName   String
+  userEmail  String?
+  rating     Int      @default(5)
+  title      String?
+  comment    String   @db.Text
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
 }

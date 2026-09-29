@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -20,6 +21,8 @@ import {
 import {
   ProductImageGallery,
 } from '../components/products/ProductImageGallery';
+
+import ProductReviews from '../components/products/ProductReviews';
 
 import {
   getMinProductPrice,
@@ -129,6 +132,21 @@ export default function ProductDetailPage({
     error,
     setError,
   ] = useState('');
+
+  const [reviewStats, setReviewStats] = useState(null);
+
+  const handleStatsChange = useCallback((newStats) => {
+    setReviewStats((prev) => {
+      if (
+        prev &&
+        prev.averageRating === newStats.averageRating &&
+        prev.reviewCount === newStats.reviewCount
+      ) {
+        return prev;
+      }
+      return newStats;
+    });
+  }, []);
 
 
   /*
@@ -807,32 +825,50 @@ export default function ProductDetailPage({
 
 
             <div className="product-detail-rating">
-
-              <span className="stars">
-                ★★★★★
-              </span>
-
-
-              <strong>
-                {
-                  product.rating ||
-                  4.8
-                }
-              </strong>
-
-
-              <small>
-
-                (
-                {
-                  product.reviewCount ||
-                  28
-                }
-                {' '}
-                reviews)
-
-              </small>
-
+              <a href="#customer-reviews" className="rating-link-wrap">
+                <span className="stars">
+                  {'★'.repeat(
+                    Math.min(
+                      5,
+                      Math.max(
+                        0,
+                        Math.round(
+                          reviewStats?.reviewCount > 0
+                            ? reviewStats.averageRating
+                            : (product.rating || 5)
+                        )
+                      )
+                    )
+                  )}
+                  {'☆'.repeat(
+                    Math.max(
+                      0,
+                      5 -
+                        Math.min(
+                          5,
+                          Math.max(
+                            0,
+                            Math.round(
+                              reviewStats?.reviewCount > 0
+                                ? reviewStats.averageRating
+                                : (product.rating || 5)
+                            )
+                          )
+                        )
+                    )
+                  )}
+                </span>
+                <strong>
+                  {reviewStats?.reviewCount > 0
+                    ? Number(reviewStats.averageRating).toFixed(1)
+                    : (product.rating != null ? Number(product.rating).toFixed(1) : (reviewStats?.reviewCount === 0 ? 'New' : '4.8'))}
+                </strong>
+                <small>
+                  {reviewStats?.reviewCount != null
+                    ? `(${reviewStats.reviewCount} ${reviewStats.reviewCount === 1 ? 'review' : 'reviews'})`
+                    : `(${product.reviewCount || 0} reviews)`}
+                </small>
+              </a>
             </div>
 
 
@@ -1241,6 +1277,14 @@ export default function ProductDetailPage({
           </div>
 
         </div>
+
+        {product && (
+          <ProductReviews
+            productId={product.id || targetId}
+            productName={product.name}
+            onStatsChange={handleStatsChange}
+          />
+        )}
 
       </div>
 

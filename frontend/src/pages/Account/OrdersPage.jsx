@@ -15,6 +15,7 @@ import AccountLayout
 
 import {
   printOrderReceipt,
+  isOrderPaid,
 } from '../../utils/receiptGenerator';
 
 
@@ -813,20 +814,25 @@ export default function OrdersPage() {
                                 </span>
 
 
-                                <button
-                                  type="button"
-                                  className="account-submit-btn"
-                                  onClick={
-                                    () => {
-
-                                      printOrderReceipt(
-                                        order,
-                                      );
-                                    }
-                                  }
-                                >
-                                  View Receipt
-                                </button>
+                                {
+                                  isOrderPaid(order) ? (
+                                    <button
+                                      type="button"
+                                      className="account-submit-btn"
+                                      onClick={() => {
+                                        printOrderReceipt(order);
+                                      }}
+                                    >
+                                      View Receipt
+                                    </button>
+                                  ) : (
+                                    <span className="order-payment-status-hint">
+                                      {order.paymentStatus === 'FAILED'
+                                        ? 'Payment Failed'
+                                        : 'Payment Pending'}
+                                    </span>
+                                  )
+                                }
 
                               </footer>
 

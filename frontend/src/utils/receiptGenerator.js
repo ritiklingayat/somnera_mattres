@@ -42,7 +42,16 @@ export const labelStatus = (status = '') => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
+export const isOrderPaid = (order) => {
+  if (!order) return false;
+  const status = String(order.paymentStatus || '').toUpperCase();
+  return status === 'PAID' || status === 'SUCCESS';
+};
+
 export const generateReceiptHtml = (order) => {
+  if (!isOrderPaid(order)) {
+    throw new Error('Receipt is only available for confirmed and paid orders.');
+  }
   let shipping = order.shippingAddress;
   if (typeof shipping === 'string') {
     try {
@@ -531,6 +540,10 @@ export const generateReceiptHtml = (order) => {
 };
 
 export const printOrderReceipt = (order) => {
+  if (!isOrderPaid(order)) {
+    alert('Payment receipt is only available once transaction is successfully paid and confirmed.');
+    return;
+  }
   const invoice = window.open('', '_blank');
   if (!invoice) {
     alert('Popup was blocked by your browser. Please allow popups for this site to view and print order receipts.');

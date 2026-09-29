@@ -43,6 +43,9 @@ export const formatOrder = (order, reqUser = null) => {
   const city = shipping.city || order.city || '';
   const pincode = shipping.pincode || shipping.postalCode || shipping.pin || order.pincode || '';
 
+  const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+  const receiptUrl = isPaid ? `/api/orders/${order.id}/receipt` : null;
+
   return {
     ...order,
     fullName,
@@ -53,6 +56,10 @@ export const formatOrder = (order, reqUser = null) => {
     city,
     pincode,
     gstNumber,
+    receipt_url: receiptUrl,
+    receiptUrl,
+    invoiceUrl: receiptUrl,
+    isReceiptAvailable: isPaid,
     shippingAddress: {
       ...shipping,
       fullName: shipping.fullName || fullName,
@@ -132,3 +139,43 @@ export const getMyOrderById = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getOrderReceipt = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            mobile: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return sendError(res, 'Order not found.', 404);
+    }
+
+    if (order.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return sendError(res, 'Access denied.', 403);
+    }
+
+    const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+    if (!isPaid) {
+      return sendError(res, 'Receipt is only available for paid and confirmed orders.', 403);
+    }
+
+    return sendSuccess(res, formatOrder(order, req.user), 'Order receipt retrieved successfully.');
+  } catch (error) {
+    next(error);
+  }
+};
+

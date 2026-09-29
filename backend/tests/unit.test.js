@@ -10,6 +10,7 @@ import { env } from '../src/config/env.js';
 import { razorpayService } from '../src/services/razorpay.service.js';
 import { emailService } from '../src/services/email.service.js';
 import { formatProduct } from '../src/modules/products/product.controller.js';
+import { formatOrder } from '../src/modules/orders/order.controller.js';
 import { formatCart, calculateProductUnitPrice } from '../src/modules/cart/cart.controller.js';
 import { requireRole } from '../src/middlewares/role.middleware.js';
 import prisma from '../src/config/prisma.js';
@@ -670,3 +671,233 @@ test('29. Product Thickness Pricing: Sanitize prices to exclude empty, null, or 
   const formattedStr = formatProduct(stringifiedProduct);
   assert.deepEqual(formattedStr.prices, { '4': 220, '8': 320 });
 });
+
+test('30. Receipt Access & Generation: Strictly restricted to successful (PAID) payments', async () => {
+  const timestamp = Date.now();
+  let user = null;
+  let unpaidOrder = null;
+  let paidOrder = null;
+
+  try {
+    // 1. Unit check on formatOrder formatting
+    const unpaidMock = {
+      id: 'ord-unpaid-1',
+      paymentStatus: 'PENDING',
+      orderStatus: 'PENDING_PAYMENT',
+      shippingAddress: { fullName: 'Test User' },
+    };
+    const formattedUnpaid = formatOrder(unpaidMock);
+    assert.equal(formattedUnpaid.receipt_url, null);
+    assert.equal(formattedUnpaid.receiptUrl, null);
+    assert.equal(formattedUnpaid.invoiceUrl, null);
+    assert.equal(formattedUnpaid.isReceiptAvailable, false);
+
+    const paidMock = {
+      id: 'ord-paid-1',
+      paymentStatus: 'PAID',
+      orderStatus: 'CONFIRMED',
+      shippingAddress: { fullName: 'Test User' },
+    };
+    const formattedPaid = formatOrder(paidMock);
+    assert.equal(formattedPaid.receipt_url, '/api/orders/ord-paid-1/receipt');
+    assert.equal(formattedPaid.receiptUrl, '/api/orders/ord-paid-1/receipt');
+    assert.equal(formattedPaid.invoiceUrl, '/api/orders/ord-paid-1/receipt');
+    assert.equal(formattedPaid.isReceiptAvailable, true);
+
+    // 2. Integration check with database & authentication
+    user = await prisma.user.create({
+      data: {
+        firstName: 'Receipt',
+        lastName: 'Tester',
+        email: `receipt_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    unpaidOrder = await prisma.order.create({
+      data: {
+        userId: user.id,
+        orderStatus: 'PENDING_PAYMENT',
+        paymentStatus: 'PENDING',
+        subtotal: 10000,
+        totalAmount: 10000,
+        shippingAddress: {
+          fullName: 'Receipt Tester',
+          mobile: '9876543210',
+          email: user.email,
+        },
+      },
+    });
+
+    paidOrder = await prisma.order.create({
+      data: {
+        userId: user.id,
+        orderStatus: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        subtotal: 12000,
+        totalAmount: 12000,
+        shippingAddress: {
+          fullName: 'Receipt Tester',
+          mobile: '9876543210',
+          email: user.email,
+        },
+      },
+    });
+
+    // Unpaid order receipt request must be rejected with 403 Forbidden
+    const unpaidRes = await request(app)
+      .get(`/api/orders/${unpaidOrder.id}/receipt`)
+      .set('Authorization', `Bearer ${token}`);
+    assert.equal(unpaidRes.status, 403);
+    assert.equal(unpaidRes.body.success, false);
+    assert.match(unpaidRes.body.message, /Receipt is only available for paid/i);
+
+    // Paid order receipt request must succeed with 200 OK
+    const paidRes = await request(app)
+      .get(`/api/orders/${paidOrder.id}/receipt`)
+      .set('Authorization', `Bearer ${token}`);
+    assert.equal(paidRes.status, 200);
+    assert.equal(paidRes.body.success, true);
+    assert.equal(paidRes.body.data.id, paidOrder.id);
+    assert.equal(paidRes.body.data.isReceiptAvailable, true);
+    assert.equal(paidRes.body.data.receipt_url, `/api/orders/${paidOrder.id}/receipt`);
+  } finally {
+    if (unpaidOrder || paidOrder) {
+      const orderIds = [unpaidOrder?.id, paidOrder?.id].filter(Boolean);
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+    }
+    if (user?.id) {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  }
+});
+
+test('31. Public Reviews & Ratings API: Public retrieval without auth, review submission with rating & aggregate updates', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let user = null;
+
+  try {
+    // 1. Create a test product
+    product = await prisma.product.create({
+      data: {
+        name: `Test Mattress ${timestamp}`,
+        slug: `test-mattress-${timestamp}`,
+        sku: `SKU-REV-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 15000,
+        image: 'https://example.com/test-mattress.jpg',
+        isActive: true,
+      },
+    });
+
+    // 2. Create a test user
+    user = await prisma.user.create({
+      data: {
+        firstName: 'Reviewer',
+        lastName: 'Member',
+        email: `reviewer_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // 3. Public GET without any auth headers
+    const emptyRes = await request(app).get(`/api/products/${product.id}/reviews`);
+    assert.equal(emptyRes.status, 200);
+    assert.equal(emptyRes.body.success, true);
+    assert.deepEqual(emptyRes.body.data.reviews, []);
+    assert.equal(emptyRes.body.data.averageRating, 0);
+    assert.equal(emptyRes.body.data.reviewCount, 0);
+
+    // 4. Input validation: invalid rating & short comment rejected
+    const invalidRatingRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .send({ rating: 7, comment: 'Valid comment text' });
+    assert.equal(invalidRatingRes.status, 400);
+    assert.equal(invalidRatingRes.body.success, false);
+
+    const emptyCommentRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .send({ rating: 5, comment: '  ' });
+    assert.equal(emptyCommentRes.status, 400);
+    assert.equal(emptyCommentRes.body.success, false);
+
+    // 5. Submit guest review (no auth token)
+    const guestRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .send({
+        rating: 4,
+        userName: 'Aarav Guest',
+        title: 'Very comfortable',
+        comment: 'Great mattress for the price, highly recommended for back support!',
+      });
+    assert.equal(guestRes.status, 201);
+    assert.equal(guestRes.body.success, true);
+    assert.equal(guestRes.body.data.review.isVerified, false);
+    assert.equal(guestRes.body.data.review.userName, 'Aarav Guest');
+    assert.equal(guestRes.body.data.review.rating, 4);
+    assert.equal(guestRes.body.data.averageRating, 4);
+    assert.equal(guestRes.body.data.reviewCount, 1);
+
+    // 6. Submit authenticated user review (with Bearer token)
+    const authRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        rating: 5,
+        title: 'Best purchase yet',
+        comment: 'Exceeded my expectations, outstanding comfort and quality materials.',
+      });
+    assert.equal(authRes.status, 201);
+    assert.equal(authRes.body.success, true);
+    assert.equal(authRes.body.data.review.isVerified, true);
+    assert.equal(authRes.body.data.review.userId, user.id);
+    assert.equal(authRes.body.data.review.userName, 'Reviewer Member');
+    assert.equal(authRes.body.data.review.rating, 5);
+    assert.equal(authRes.body.data.averageRating, 4.5);
+    assert.equal(authRes.body.data.reviewCount, 2);
+
+    // 7. Verify subsequent public retrieval using product slug
+    const finalRes = await request(app).get(`/api/products/${product.slug}/reviews`);
+    assert.equal(finalRes.status, 200);
+    assert.equal(finalRes.body.success, true);
+    assert.equal(finalRes.body.data.reviews.length, 2);
+    assert.equal(finalRes.body.data.averageRating, 4.5);
+    assert.equal(finalRes.body.data.reviewCount, 2);
+    assert.equal(finalRes.body.data.ratingDistribution['5'], 1);
+    assert.equal(finalRes.body.data.ratingDistribution['4'], 1);
+    assert.equal(finalRes.body.data.ratingDistribution['3'], 0);
+
+    // 8. Verify product details endpoint returns aggregated rating and reviewCount
+    const productRes = await request(app).get(`/api/products/${product.id}`);
+    assert.equal(productRes.status, 200);
+    assert.equal(productRes.body.data.rating, 4.5);
+    assert.equal(productRes.body.data.reviewCount, 2);
+  } finally {
+    if (product?.id) {
+      await prisma.review.deleteMany({ where: { productId: product.id } });
+      await prisma.product.delete({ where: { id: product.id } });
+    }
+    if (user?.id) {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  }
+});
+
+

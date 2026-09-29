@@ -399,7 +399,7 @@ export function ProductCard({
               strokeWidth="2.2"
             >
 
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
 
               <circle
                 cx="12"

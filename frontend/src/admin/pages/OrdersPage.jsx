@@ -11,6 +11,7 @@ import {
 
 import {
   printOrderReceipt,
+  isOrderPaid,
 } from '../../utils/receiptGenerator';
 
 
@@ -350,6 +351,7 @@ export default function OrdersPage() {
   */
 
   const printInvoice = (order) => {
+    if (!isOrderPaid(order)) return;
     printOrderReceipt(order);
   };
 
@@ -743,21 +745,22 @@ export default function OrdersPage() {
 
 
                               <span className="receipt-col">
-
-                                <button
-                                  type="button"
-                                  className="admin-print-btn"
-                                  onClick={
-                                    () =>
-                                      printInvoice(
-                                        order,
-                                      )
-                                  }
-                                  title={`Print receipt for order #${order.id}`}
-                                >
-                                  Print
-                                </button>
-
+                                {
+                                  isOrderPaid(order) ? (
+                                    <button
+                                      type="button"
+                                      className="admin-print-btn"
+                                      onClick={() => printInvoice(order)}
+                                      title={`Print receipt for order #${order.id}`}
+                                    >
+                                      Print
+                                    </button>
+                                  ) : (
+                                    <span className="receipt-unavailable" title="Receipt unavailable until payment is confirmed">
+                                      —
+                                    </span>
+                                  )
+                                }
                               </span>
 
 
