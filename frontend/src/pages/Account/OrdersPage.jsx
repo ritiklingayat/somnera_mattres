@@ -368,13 +368,13 @@ export default function OrdersPage() {
           }
 
 
-          setOrders(
-            Array.isArray(
-              result,
-            )
-              ? result
-              : [],
-          );
+          const completedOrders = (Array.isArray(result) ? result : []).filter((order) => {
+            const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+            const isCod = String(order.paymentMethod || '').toUpperCase() === 'COD';
+            return isPaid || isCod;
+          });
+
+          setOrders(completedOrders);
 
 
         } catch (error) {

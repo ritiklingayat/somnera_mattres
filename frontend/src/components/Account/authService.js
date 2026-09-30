@@ -142,7 +142,13 @@ export async function getCurrentUserApi() {
 export async function getMyOrdersApi() {
   try {
     const orders = await api.get('/orders/my-orders');
-    if (Array.isArray(orders)) return orders;
+    if (Array.isArray(orders)) {
+      return orders.filter((order) => {
+        const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+        const isCod = String(order.paymentMethod || '').toUpperCase() === 'COD';
+        return isPaid || isCod;
+      });
+    }
   } catch (err) {
     // Fallback to local IndexedDB
   }
@@ -150,7 +156,12 @@ export async function getMyOrdersApi() {
   const user = await getCurrentUserApi();
   const userName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
   return (await getAll('orders'))
-    .filter((order) => String(order.userId) === String(user.id))
+    .filter((order) => {
+      if (String(order.userId) !== String(user.id)) return false;
+      const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+      const isCod = String(order.paymentMethod || '').toUpperCase() === 'COD';
+      return isPaid || isCod;
+    })
     .map((order) => ({
       ...order,
       fullName: order.fullName || userName || 'Customer',
@@ -170,8 +181,16 @@ export async function getMyOrdersApi() {
 export async function getMyOrderByIdApi(orderId) {
   try {
     const order = await api.get(`/orders/my-orders/${orderId}`);
-    if (order) return order;
+    if (order) {
+      const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+      const isCod = String(order.paymentMethod || '').toUpperCase() === 'COD';
+      if (!isPaid && !isCod) {
+        throw new Error('Order not found.');
+      }
+      return order;
+    }
   } catch (err) {
+    if (err.message === 'Order not found.' || err.status === 404 || err.status === 403) throw err;
     // Fallback to local
   }
 
@@ -181,6 +200,9 @@ export async function getMyOrderByIdApi(orderId) {
     (item) => String(item.id) === String(orderId) && String(item.userId) === String(user.id)
   );
   if (!order) throw new Error('Order not found.');
+  const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID';
+  const isCod = String(order.paymentMethod || '').toUpperCase() === 'COD';
+  if (!isPaid && !isCod) throw new Error('Order not found.');
   return {
     ...order,
     fullName: order.fullName || userName || 'Customer',

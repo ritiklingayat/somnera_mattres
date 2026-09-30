@@ -175,7 +175,7 @@ export default function OrdersPage() {
 
 
           const result =
-            await getAdminOrdersApi();
+            await getAdminOrdersApi({ includePending: true });
 
 
           if (
@@ -229,9 +229,23 @@ export default function OrdersPage() {
 
   /*
   ================================================
-  SEARCH + FILTER
+  SEARCH + FILTER (ACTIVE QUEUE vs ABANDONED)
   ================================================
   */
+
+  const isAbandonedOrder = (order) => {
+    const payment = String(order?.paymentStatus || '').toUpperCase();
+    const method = String(order?.paymentMethod || '').toUpperCase();
+    return payment === 'PENDING' && method !== 'COD';
+  };
+
+  const activeOrdersCount = useMemo(() => {
+    return orders.filter((o) => !isAbandonedOrder(o)).length;
+  }, [orders]);
+
+  const abandonedOrdersCount = useMemo(() => {
+    return orders.filter(isAbandonedOrder).length;
+  }, [orders]);
 
   const matchingOrders =
     useMemo(() => {
@@ -245,21 +259,15 @@ export default function OrdersPage() {
       return orders.filter(
         (order) => {
 
-          const matchesStatus =
-            filter ===
-              'ALL' ||
-            String(
-              order.orderStatus ||
-              '',
-            ).toUpperCase() ===
-              filter;
+          const isAbandoned = isAbandonedOrder(order);
 
-
-          if (
-            !matchesStatus
-          ) {
-
-            return false;
+          if (filter === 'PENDING_PAYMENT') {
+            if (!isAbandoned) return false;
+          } else if (filter === 'ALL') {
+            if (isAbandoned) return false;
+          } else {
+            if (isAbandoned) return false;
+            if (String(order.orderStatus || '').toUpperCase() !== filter) return false;
           }
 
 
@@ -293,6 +301,7 @@ export default function OrdersPage() {
               ${order.mobile || ''}
               ${order.orderStatus || ''}
               ${order.paymentStatus || ''}
+              ${order.paymentMethod || ''}
               ${products}
             `
               .toLowerCase();
@@ -382,14 +391,22 @@ export default function OrdersPage() {
               700,
           }}
         >
-
-          Total Orders:
-          {' '}
-
-          {
-            orders.length
-          }
-
+          Active Orders: {activeOrdersCount}
+          {abandonedOrdersCount > 0 && (
+            <span
+              style={{
+                marginLeft: '12px',
+                color: '#b45309',
+                background: '#fef3c7',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+              }}
+            >
+              {abandonedOrdersCount} abandoned {abandonedOrdersCount === 1 ? 'checkout' : 'checkouts'}
+            </span>
+          )}
         </div>
 
       </div>
@@ -432,18 +449,13 @@ export default function OrdersPage() {
           />
 
 
-          <div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
 
             {
               [
                 [
                   'ALL',
-                  'All',
-                ],
-
-                [
-                  'PENDING_PAYMENT',
-                  'Pending',
+                  `All Active (${activeOrdersCount})`,
                 ],
 
                 [
@@ -501,6 +513,21 @@ export default function OrdersPage() {
                 ),
               )
             }
+
+            <span style={{ display: 'inline-block', width: '1px', height: '18px', background: 'var(--admin-line, #cbd5e1)', margin: '0 4px' }} />
+
+            <button
+              type="button"
+              className={filter === 'PENDING_PAYMENT' ? 'active-filter' : ''}
+              style={{
+                color: filter === 'PENDING_PAYMENT' ? undefined : '#b45309',
+                borderColor: filter === 'PENDING_PAYMENT' ? undefined : '#fde68a',
+                fontWeight: 600,
+              }}
+              onClick={() => setFilter('PENDING_PAYMENT')}
+            >
+              Abandoned / Pending Payment ({abandonedOrdersCount})
+            </button>
 
           </div>
 
@@ -566,8 +593,16 @@ export default function OrdersPage() {
                   >
 
                     <h2>
-                      No orders found
+                      {filter === 'PENDING_PAYMENT'
+                        ? 'No abandoned checkouts found'
+                        : 'No orders found'}
                     </h2>
+
+                    <p style={{ color: '#64748b', marginTop: '8px' }}>
+                      {filter === 'PENDING_PAYMENT'
+                        ? 'All customer checkouts have been completed or paid.'
+                        : 'No orders match your current filter or search criteria.'}
+                    </p>
 
                   </div>
                 )
@@ -630,6 +665,8 @@ export default function OrdersPage() {
                                   )
                                   .join(', ')
                               : 'No products';
+
+                          const isAbandoned = isAbandonedOrder(order);
 
 
                           return (
@@ -705,41 +742,56 @@ export default function OrdersPage() {
 
                               <span>
 
-                                <span
-                                  className={
-                                    `order-status status-${String(
-                                      order.orderStatus ||
-                                      '',
-                                    )
-                                      .toLowerCase()
-                                      .replaceAll(
-                                        '_',
-                                        '-',
-                                      )}`
-                                  }
-                                >
+                                {isAbandoned ? (
+                                  <>
+                                    <span
+                                      className="order-status"
+                                      style={{
+                                        background: '#fffbeb',
+                                        color: '#b45309',
+                                        border: '1px solid #fde68a',
+                                      }}
+                                    >
+                                      Pending Payment
+                                    </span>
 
-                                  {
-                                    labelStatus(
-                                      order.orderStatus,
-                                    )
-                                  }
+                                    <small style={{ color: '#b45309', fontWeight: 600 }}>
+                                      Abandoned Checkout
+                                    </small>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span
+                                      className={
+                                        `order-status status-${String(
+                                          order.orderStatus ||
+                                          '',
+                                        )
+                                          .toLowerCase()
+                                          .replaceAll(
+                                            '_',
+                                            '-',
+                                          )}`
+                                      }
+                                    >
+                                      {
+                                        labelStatus(
+                                          order.orderStatus,
+                                        )
+                                      }
+                                    </span>
 
-                                </span>
-
-
-                                <small>
-
-                                  Payment:
-                                  {' '}
-
-                                  {
-                                    labelStatus(
-                                      order.paymentStatus,
-                                    )
-                                  }
-
-                                </small>
+                                    <small>
+                                      Payment:
+                                      {' '}
+                                      {
+                                        labelStatus(
+                                          order.paymentStatus,
+                                        )
+                                      }
+                                    </small>
+                                  </>
+                                )}
 
                               </span>
 
@@ -766,54 +818,71 @@ export default function OrdersPage() {
 
                               <span className="row-actions">
 
-                                <select
-                                  className="admin-status-select"
-                                  value={
-                                    ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(
-                                      order.orderStatus,
-                                    )
-                                      ? order.orderStatus
-                                      : ''
-                                  }
-                                  onChange={
-                                    (event) =>
-                                      handleStatusChange(
-                                        order.id,
-                                        event.target.value,
-                                      )
-                                  }
-                                  disabled={
-                                    updatingOrderId ===
-                                    order.id
-                                  }
-                                  aria-label={`Change status for order ${order.id}`}
-                                >
-
-                                  <option
-                                    value=""
-                                    disabled
+                                {isAbandoned ? (
+                                  <span
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      color: '#92400e',
+                                      background: '#fef3c7',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontWeight: 600,
+                                      display: 'inline-block',
+                                    }}
+                                    title="Uncompleted checkout - awaiting customer payment"
                                   >
-                                    {
-                                      order.orderStatus ===
-                                      'CONFIRMED'
-                                        ? 'Update Status'
-                                        : 'Change Status'
+                                    Awaiting Payment
+                                  </span>
+                                ) : (
+                                  <select
+                                    className="admin-status-select"
+                                    value={
+                                      ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(
+                                        order.orderStatus,
+                                      )
+                                        ? order.orderStatus
+                                        : ''
                                     }
-                                  </option>
+                                    onChange={
+                                      (event) =>
+                                        handleStatusChange(
+                                          order.id,
+                                          event.target.value,
+                                        )
+                                    }
+                                    disabled={
+                                      updatingOrderId ===
+                                      order.id
+                                    }
+                                    aria-label={`Change status for order ${order.id}`}
+                                  >
 
-                                  <option value="PROCESSING">
-                                    PROCESSING
-                                  </option>
+                                    <option
+                                      value=""
+                                      disabled
+                                    >
+                                      {
+                                        order.orderStatus ===
+                                        'CONFIRMED'
+                                          ? 'Update Status'
+                                          : 'Change Status'
+                                      }
+                                    </option>
 
-                                  <option value="SHIPPED">
-                                    SHIPPED
-                                  </option>
+                                    <option value="PROCESSING">
+                                      PROCESSING
+                                    </option>
 
-                                  <option value="DELIVERED">
-                                    DELIVERED
-                                  </option>
+                                    <option value="SHIPPED">
+                                      SHIPPED
+                                    </option>
 
-                                </select>
+                                    <option value="DELIVERED">
+                                      DELIVERED
+                                    </option>
+
+                                  </select>
+                                )}
 
                               </span>
 

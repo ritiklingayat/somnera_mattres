@@ -2815,7 +2815,7 @@ const [
               () => {
 
                 setCheckoutError(
-                  'Payment was cancelled. Your order is still pending payment.',
+                  'Payment was cancelled. Your items remain saved in your cart and you can complete checkout whenever you are ready.',
                 );
               },
           },

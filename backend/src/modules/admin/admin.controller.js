@@ -798,7 +798,29 @@ const formatAdminOrder = (order) => {
 
 export const getAdminOrders = async (req, res, next) => {
   try {
+    const { includePending, tab, paymentStatus, orderStatus } = req.query;
+
+    const where = {};
+
+    if (tab === 'abandoned' || tab === 'pending' || paymentStatus === 'PENDING') {
+      where.paymentStatus = 'PENDING';
+      where.paymentMethod = { not: 'COD' };
+    } else if (includePending === 'true' || includePending === true) {
+      // Include all orders (active fulfillment + abandoned checkouts)
+    } else {
+      // By default, exclude pending online checkouts to prevent cluttering fulfillment workflows
+      where.OR = [
+        { paymentStatus: 'PAID' },
+        { paymentMethod: 'COD' },
+      ];
+    }
+
+    if (orderStatus && orderStatus !== 'ALL') {
+      where.orderStatus = orderStatus;
+    }
+
     const orders = await prisma.order.findMany({
+      where,
       include: {
         user: {
           select: {

@@ -1360,4 +1360,167 @@ test('35. Admin Review Management: Admin can view all platform reviews with sear
   }
 });
 
+test('36. Pending Orders Visibility Filtering & Lifecycle: Unpaid pending orders are hidden from getMyOrders and default getAdminOrders, isolated in abandoned queue, and cascade upon payment', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let admin = null;
+  let customer = null;
+  let orderPending = null;
+  let orderPaid = null;
+
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: `Visibility Test Bed ${timestamp}`,
+        slug: `visibility-test-bed-${timestamp}`,
+        sku: `SKU-VIS-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 15000,
+        image: 'https://example.com/bed.jpg',
+        isActive: true,
+      },
+    });
+
+    customer = await prisma.user.create({
+      data: {
+        firstName: 'Visibility',
+        lastName: 'Buyer',
+        email: `vis_buyer_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    admin = await prisma.user.create({
+      data: {
+        firstName: 'Admin',
+        lastName: 'Fulfillment',
+        email: `admin_ful_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+
+    const userToken = jwt.sign(
+      { id: customer.id, email: customer.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const adminToken = jwt.sign(
+      { id: admin.id, email: admin.email, role: 'ADMIN' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // 1. Create an uncompleted/abandoned checkout order (PENDING online)
+    orderPending = await prisma.order.create({
+      data: {
+        userId: customer.id,
+        orderStatus: 'PENDING_PAYMENT',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'ONLINE',
+        subtotal: 15000,
+        totalAmount: 15000,
+        shippingAddress: { fullName: 'Visibility Buyer', city: 'Mumbai', pincode: '400001' },
+      },
+    });
+
+    // 2. Create a completed/paid order
+    orderPaid = await prisma.order.create({
+      data: {
+        userId: customer.id,
+        orderStatus: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        paymentMethod: 'ONLINE',
+        subtotal: 15000,
+        totalAmount: 15000,
+        shippingAddress: { fullName: 'Visibility Buyer', city: 'Mumbai', pincode: '400001' },
+      },
+    });
+
+    // 3. User My Orders: ONLY PAID order is returned; PENDING order is excluded
+    const userOrdersRes = await request(app)
+      .get('/api/orders/my-orders')
+      .set('Authorization', `Bearer ${userToken}`);
+    assert.equal(userOrdersRes.status, 200);
+    const userOrderIds = userOrdersRes.body.data.map((o) => o.id);
+    assert.ok(userOrderIds.includes(orderPaid.id), 'Paid order should be visible in My Orders');
+    assert.ok(!userOrderIds.includes(orderPending.id), 'Pending order must NOT be visible in My Orders');
+
+    // 4. User Single Order query: Pending order returns 404 Not Found
+    const userPaidOrderRes = await request(app)
+      .get(`/api/orders/my-orders/${orderPaid.id}`)
+      .set('Authorization', `Bearer ${userToken}`);
+    assert.equal(userPaidOrderRes.status, 200);
+
+    const userPendingOrderRes = await request(app)
+      .get(`/api/orders/my-orders/${orderPending.id}`)
+      .set('Authorization', `Bearer ${userToken}`);
+    assert.equal(userPendingOrderRes.status, 404);
+
+    // 5. Admin Orders default: Pending orders are excluded from fulfillment queue
+    const adminDefaultRes = await request(app)
+      .get('/api/admin/orders')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminDefaultRes.status, 200);
+    const adminDefaultIds = adminDefaultRes.body.data.map((o) => o.id);
+    assert.ok(adminDefaultIds.includes(orderPaid.id), 'Paid order must be in default admin orders queue');
+    assert.ok(!adminDefaultIds.includes(orderPending.id), 'Pending order must be excluded from default admin orders queue');
+
+    // 6. Admin Orders with includePending=true: Returns all orders
+    const adminAllRes = await request(app)
+      .get('/api/admin/orders?includePending=true')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminAllRes.status, 200);
+    const adminAllIds = adminAllRes.body.data.map((o) => o.id);
+    assert.ok(adminAllIds.includes(orderPaid.id));
+    assert.ok(adminAllIds.includes(orderPending.id));
+
+    // 7. Admin Orders with tab=abandoned: Isolates only the pending order
+    const adminAbandonedRes = await request(app)
+      .get('/api/admin/orders?tab=abandoned')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminAbandonedRes.status, 200);
+    const adminAbandonedIds = adminAbandonedRes.body.data.map((o) => o.id);
+    assert.ok(adminAbandonedIds.includes(orderPending.id), 'Pending order should be in abandoned queue');
+    assert.ok(!adminAbandonedIds.includes(orderPaid.id), 'Paid order should NOT be in abandoned queue');
+
+    // 8. Payment completion lifecycle cascade: When order transitions to PAID, it appears in both views
+    await prisma.order.update({
+      where: { id: orderPending.id },
+      data: { paymentStatus: 'PAID', orderStatus: 'CONFIRMED' },
+    });
+
+    const userOrdersPostPay = await request(app)
+      .get('/api/orders/my-orders')
+      .set('Authorization', `Bearer ${userToken}`);
+    assert.equal(userOrdersPostPay.status, 200);
+    const userPostPayIds = userOrdersPostPay.body.data.map((o) => o.id);
+    assert.ok(userPostPayIds.includes(orderPending.id), 'Now paid order must appear in My Orders');
+
+    const adminDefaultPostPay = await request(app)
+      .get('/api/admin/orders')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminDefaultPostPay.status, 200);
+    const adminPostPayIds = adminDefaultPostPay.body.data.map((o) => o.id);
+    assert.ok(adminPostPayIds.includes(orderPending.id), 'Now paid order must appear in default admin queue');
+  } finally {
+    const orderIds = [orderPending?.id, orderPaid?.id].filter(Boolean);
+    if (orderIds.length > 0) {
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+    }
+    if (product?.id) {
+      await prisma.product.delete({ where: { id: product.id } }).catch(() => {});
+    }
+    const userIds = [admin?.id, customer?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {});
+    }
+  }
+});
+
+
 

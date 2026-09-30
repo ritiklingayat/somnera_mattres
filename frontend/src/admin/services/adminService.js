@@ -11,9 +11,18 @@ export async function getAdminCustomersApi() {
   return (await getAll('users')).filter((user) => user.role !== 'ADMIN').map(({ password: _password, ...user }) => user);
 }
 
-export async function getAdminOrdersApi() {
+export async function getAdminOrdersApi(params = {}) {
+  const queryParams = new URLSearchParams();
+  if (params.includePending) queryParams.set('includePending', 'true');
+  if (params.tab) queryParams.set('tab', params.tab);
+  if (params.paymentStatus) queryParams.set('paymentStatus', params.paymentStatus);
+  if (params.orderStatus) queryParams.set('orderStatus', params.orderStatus);
+
+  const qs = queryParams.toString();
+  const endpoint = `/admin/orders${qs ? `?${qs}` : ''}`;
+
   try {
-    const data = await api.get('/admin/orders');
+    const data = await api.get(endpoint);
     if (Array.isArray(data)) return data;
   } catch (err) {
     // Fallback

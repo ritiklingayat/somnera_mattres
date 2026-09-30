@@ -85,7 +85,13 @@ export const formatOrder = (order, reqUser = null) => {
 export const getMyOrders = async (req, res, next) => {
   try {
     const orders = await prisma.order.findMany({
-      where: { userId: req.user.id },
+      where: {
+        userId: req.user.id,
+        OR: [
+          { paymentStatus: 'PAID' },
+          { paymentMethod: 'COD' },
+        ],
+      },
       include: {
         items: true,
         user: {
@@ -115,6 +121,10 @@ export const getMyOrderById = async (req, res, next) => {
       where: {
         id,
         userId: req.user.id,
+        OR: [
+          { paymentStatus: 'PAID' },
+          { paymentMethod: 'COD' },
+        ],
       },
       include: {
         items: true,
