@@ -9,7 +9,6 @@ export const adminNavigation = [
   ['offers', 'Offers & Banners'],
   ['reviews', 'Reviews'],
   ['leads', 'Leads'],
-  ['settings', 'Settings'],
 ];
 
 export const orderStatuses = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];

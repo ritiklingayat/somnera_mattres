@@ -12,8 +12,6 @@ import CategoriesPage from './pages/CategoriesPage';
 import ShowroomsPage from './pages/ShowroomsPage';
 import CustomersPage from './pages/CustomersPage';
 import ReviewsPage from './pages/ReviewsPage';
-import ModulePage from './pages/ModulePage';
-import { moduleConfig } from './data/seedData';
 import './AdminPanel.css';
 
 export default function AdminPanel({
@@ -37,36 +35,6 @@ export default function AdminPanel({
 
   /*
   ================================================
-  TEMPORARY GENERIC MODULES
-  ================================================
-
-  Real backend pages:
-  - Orders
-  - Products
-  - Categories
-  - Customers
-  - Leads
-  - Coupons
-
-  Temporary frontend-only:
-  - Reviews
-  - Settings
-  ================================================
-  */
-
-  const [
-    genericModules,
-    setGenericModules,
-  ] = useState({
-
-    reviews: [],
-
-    settings: [],
-  });
-
-
-  /*
-  ================================================
   LOGIN
   ================================================
   */
@@ -84,94 +52,6 @@ export default function AdminPanel({
       />
     );
   }
-
-
-  /*
-  ================================================
-  GENERIC MODULE HANDLERS
-  ================================================
-  */
-
-  const addRecord =
-    (
-      moduleName,
-      record,
-    ) => {
-
-      setGenericModules(
-        (current) => ({
-
-          ...current,
-
-          [moduleName]: [
-            ...(
-              current[
-                moduleName
-              ] ||
-              []
-            ),
-
-            record,
-          ],
-        }),
-      );
-    };
-
-
-  const updateRecord =
-    (
-      moduleName,
-      record,
-    ) => {
-
-      setGenericModules(
-        (current) => ({
-
-          ...current,
-
-          [moduleName]:
-            (
-              current[
-                moduleName
-              ] ||
-              []
-            ).map(
-              (existingRecord) =>
-                existingRecord.id ===
-                  record.id
-                  ? record
-                  : existingRecord,
-            ),
-        }),
-      );
-    };
-
-
-  const deleteRecord =
-    (
-      moduleName,
-      id,
-    ) => {
-
-      setGenericModules(
-        (current) => ({
-
-          ...current,
-
-          [moduleName]:
-            (
-              current[
-                moduleName
-              ] ||
-              []
-            ).filter(
-              (record) =>
-                record.id !==
-                id,
-            ),
-        }),
-      );
-    };
 
 
   /*
@@ -347,69 +227,17 @@ export default function AdminPanel({
 
   /*
   --------------------------------
-  GENERIC MODULES
+  DEFAULT / FALLBACK
   --------------------------------
-
-  settings
   */
 
   else {
 
-    const activeModule =
-      moduleConfig[
-        route
-      ]
-        ? route
-        : 'settings';
-
-
-    const activeConfig =
-      moduleConfig[
-        route
-      ] ||
-      moduleConfig.settings;
-
-
     page = (
 
-      <ModulePage
-        key={
-          activeModule
-        }
-
-        config={
-          activeConfig
-        }
-
-        records={
-          genericModules[
-            activeModule
-          ] ||
-          []
-        }
-
-        onAdd={
-          (record) =>
-            addRecord(
-              activeModule,
-              record,
-            )
-        }
-
-        onUpdate={
-          (record) =>
-            updateRecord(
-              activeModule,
-              record,
-            )
-        }
-
-        onDelete={
-          (id) =>
-            deleteRecord(
-              activeModule,
-              id,
-            )
+      <OverviewPage
+        onNavigate={
+          navigate
         }
       />
     );
