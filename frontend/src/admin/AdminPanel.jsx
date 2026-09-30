@@ -11,6 +11,7 @@ import ProductsPage from './pages/ProductsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import ShowroomsPage from './pages/ShowroomsPage';
 import CustomersPage from './pages/CustomersPage';
+import ReviewsPage from './pages/ReviewsPage';
 import ModulePage from './pages/ModulePage';
 import { moduleConfig } from './data/seedData';
 import './AdminPanel.css';
@@ -328,10 +329,27 @@ export default function AdminPanel({
 
   /*
   --------------------------------
+  REVIEWS
+  --------------------------------
+  */
+
+  else if (
+    route ===
+    'reviews'
+  ) {
+
+    page = (
+
+      <ReviewsPage />
+    );
+  }
+
+
+  /*
+  --------------------------------
   GENERIC MODULES
   --------------------------------
 
-  reviews
   settings
   */
 

@@ -136,3 +136,21 @@ export async function deleteAdminCouponApi(couponId) {
   await deleteOne('coupons', couponId);
   return { success: true };
 }
+
+export async function getAdminReviewsApi(params = {}) {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.set('search', params.search);
+  if (params.productId) queryParams.set('productId', params.productId);
+  if (params.rating) queryParams.set('rating', params.rating);
+
+  const qs = queryParams.toString();
+  const endpoint = `/admin/reviews${qs ? `?${qs}` : ''}`;
+  const data = await api.get(endpoint);
+  return data || { reviews: [], total: 0, averageRating: 0 };
+}
+
+export async function deleteAdminReviewApi(reviewId) {
+  const data = await api.delete(`/admin/reviews/${reviewId}`);
+  return data || { success: true };
+}
+

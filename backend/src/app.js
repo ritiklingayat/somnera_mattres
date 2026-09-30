@@ -22,6 +22,7 @@ import addressRoutes from './modules/addresses/address.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import offerRoutes from './modules/offers/offer.routes.js';
 import distributorRoutes from './modules/distributor/distributor.routes.js';
+import reviewRoutes from './modules/reviews/review.routes.js';
 
 const app = express();
 
@@ -103,6 +104,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/offers', offerRoutes);
 app.use('/api/distributor-requests', distributorRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 404 & Global Error Handling

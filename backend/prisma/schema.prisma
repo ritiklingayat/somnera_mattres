@@ -66,7 +66,8 @@ model User {
   wishlist    Wishlist?
   orders      Order[]
   otps        OtpVerification[]
-  reviews     Review[]
+  reviews       Review[]
+  reviewReplies ReviewReply[]
 
   @@index([email])
 }
@@ -358,7 +359,25 @@ model Review {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  replies    ReviewReply[]
+
   @@index([productId])
   @@index([userId])
   @@index([rating])
+}
+
+model ReviewReply {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String
+  userEmail String?
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reviewId])
+  @@index([userId])
 }

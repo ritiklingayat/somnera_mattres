@@ -23,6 +23,8 @@ import {
   createAdminOffer,
   updateAdminOffer,
   deleteAdminOffer,
+  getAdminReviews,
+  deleteAdminReview,
 } from './admin.controller.js';
 import { authenticateToken } from '../../middlewares/auth.middleware.js';
 import { requireAdmin } from '../../middlewares/role.middleware.js';
@@ -68,6 +70,10 @@ router.put('/orders/:id/status', updateAdminOrderStatus);
 // Customers
 router.get('/customers', getAdminCustomers);
 router.put('/customers/:id/status', updateAdminCustomerStatus);
+
+// Reviews Moderation
+router.get('/reviews', getAdminReviews);
+router.delete('/reviews/:id', deleteAdminReview);
 
 // Showrooms & Distributors
 router.get('/showrooms', getAdminShowrooms);

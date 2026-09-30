@@ -1137,3 +1137,139 @@ export const deleteAdminOffer = async (req, res, next) => {
     next(error);
   }
 };
+
+/*
+==================================================
+9. CUSTOMER REVIEWS MODERATION
+==================================================
+*/
+
+export const getAdminReviews = async (req, res, next) => {
+  try {
+    const { search, productId, rating } = req.query;
+
+    const where = {};
+
+    if (productId) {
+      where.productId = productId;
+    }
+
+    if (rating !== undefined && rating !== '') {
+      const parsedRating = parseInt(rating, 10);
+      if (!Number.isNaN(parsedRating)) {
+        where.rating = parsedRating;
+      }
+    }
+
+    if (search && search.trim()) {
+      const query = search.trim();
+      where.OR = [
+        { userName: { contains: query, mode: 'insensitive' } },
+        { userEmail: { contains: query, mode: 'insensitive' } },
+        { title: { contains: query, mode: 'insensitive' } },
+        { comment: { contains: query, mode: 'insensitive' } },
+        { product: { name: { contains: query, mode: 'insensitive' } } },
+      ];
+    }
+
+    const reviews = await prisma.review.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            imageUrl: true,
+          },
+        },
+        replies: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            reviewId: true,
+            userId: true,
+            userName: true,
+            userEmail: true,
+            comment: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    const total = reviews.length;
+    const averageRating =
+      total > 0
+        ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / total).toFixed(1))
+        : 0;
+
+    return sendSuccess(
+      res,
+      {
+        reviews,
+        total,
+        averageRating,
+      },
+      'Admin reviews retrieved successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteAdminReview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const review = await prisma.review.findUnique({
+      where: { id },
+    });
+
+    if (!review) {
+      return sendError(res, 'Review not found.', 404);
+    }
+
+    // Cascade delete review (and all its replies)
+    await prisma.review.delete({
+      where: { id },
+    });
+
+    // Recompute product review statistics
+    const aggregations = await prisma.review.aggregate({
+      where: { productId: review.productId },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    const averageRating =
+      aggregations._avg.rating != null
+        ? Number(aggregations._avg.rating.toFixed(1))
+        : 0;
+    const reviewCount = aggregations._count.id || 0;
+
+    await prisma.product.update({
+      where: { id: review.productId },
+      data: {
+        rating: averageRating,
+        reviewCount,
+      },
+    });
+
+    return sendSuccess(
+      res,
+      {
+        deletedId: id,
+        productId: review.productId,
+        averageRating,
+        reviewCount,
+      },
+      'Review and associated replies deleted successfully.'
+    );
+  } catch (error) {
+    next(error);
+  }
+};

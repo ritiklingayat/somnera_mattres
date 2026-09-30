@@ -563,6 +563,263 @@
 }
 
 /* ==========================================================================
+   AUTHOR ACTIONS & EDIT FORM
+   ========================================================================== */
+
+.author-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.review-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.review-author-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: #f8f6f2;
+  color: #555;
+  transition: all 0.15s ease;
+}
+
+.edit-action-btn:hover {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #c7d2fe;
+}
+
+.delete-action-btn:hover {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.delete-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.review-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fbf9f6;
+  border: 1px solid #e7ded0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.review-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.review-edit-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1f142c;
+}
+
+.review-edit-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.review-edit-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ==========================================================================
+   PUBLIC REPLIES (TOGGLE & INLINE FORM)
+   ========================================================================== */
+
+.review-footer-bar {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #ebe5dc;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.review-reply-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid #dcd3c5;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.review-reply-toggle-btn:hover {
+  background: #241132;
+  color: #fff;
+  border-color: #241132;
+}
+
+.replies-count-pill {
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.review-reply-toggle-btn:hover .replies-count-pill {
+  background: var(--gold, #d3af5d);
+  color: #1f142c;
+}
+
+.review-reply-form-wrap {
+  margin-top: 14px;
+  background: #faf7f2;
+  border-left: 3px solid var(--gold, #d3af5d);
+  border-radius: 0 10px 10px 0;
+  padding: 16px;
+  animation: fadeInDown 0.2s ease-out;
+}
+
+.reply-form-header {
+  margin-bottom: 8px;
+}
+
+.reply-user-indicator {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.reply-user-indicator b {
+  color: #1f142c;
+}
+
+.reply-textarea {
+  min-height: 60px;
+  font-size: 0.88rem;
+  margin-bottom: 10px;
+}
+
+.reply-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reply-submit-btn {
+  padding: 7px 18px;
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   NESTED REPLIES DISPLAY
+   ========================================================================== */
+
+.review-nested-replies-list {
+  margin-top: 16px;
+  margin-left: 20px;
+  padding-left: 16px;
+  border-left: 2px solid #e5dbcb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nested-reply-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fbf9f5;
+  border: 1px solid #ebe5dc;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.nested-reply-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #3c2452;
+  color: var(--gold, #d3af5d);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nested-reply-body {
+  flex: 1;
+}
+
+.nested-reply-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.nested-reply-author {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1f142c;
+}
+
+.nested-reply-date {
+  font-size: 0.74rem;
+  color: #9ca3af;
+}
+
+.nested-reply-text {
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #4b5563;
+  margin: 0;
+  white-space: pre-line;
+}
+
+
+/* ==========================================================================
    RESPONSIVE DESIGN
    ========================================================================== */
 

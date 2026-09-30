@@ -9,3 +9,18 @@ export async function submitProductReview(productId, reviewData) {
   const res = await api.post(`/products/${productId}/reviews`, reviewData);
   return res;
 }
+
+export async function updateProductReview(productId, reviewId, reviewData) {
+  const res = await api.put(`/products/${productId}/reviews/${reviewId}`, reviewData);
+  return res;
+}
+
+export async function deleteProductReview(productId, reviewId) {
+  const res = await api.delete(`/products/${productId}/reviews/${reviewId}`);
+  return res;
+}
+
+export async function createReviewReply(productId, reviewId, replyData) {
+  const res = await api.post(`/products/${productId}/reviews/${reviewId}/replies`, replyData);
+  return res;
+}

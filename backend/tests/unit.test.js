@@ -900,4 +900,464 @@ test('31. Public Reviews & Ratings API: Public retrieval without auth, review su
   }
 });
 
+test('32. User Review Management: Author can update rating and comment with ownership check; non-author rejected with 403', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let author = null;
+  let otherUser = null;
+  let review = null;
+
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: `Test Edit Prod ${timestamp}`,
+        slug: `test-edit-prod-${timestamp}`,
+        sku: `SKU-EDIT-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 12000,
+        image: 'https://example.com/edit-mattress.jpg',
+        isActive: true,
+      },
+    });
+
+    author = await prisma.user.create({
+      data: {
+        firstName: 'Author',
+        lastName: 'User',
+        email: `author_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    otherUser = await prisma.user.create({
+      data: {
+        firstName: 'Other',
+        lastName: 'User',
+        email: `other_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const authorToken = jwt.sign(
+      { id: author.id, email: author.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const otherToken = jwt.sign(
+      { id: otherUser.id, email: otherUser.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Create review by Author
+    const createRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({
+        rating: 3,
+        title: 'Initial Title',
+        comment: 'Initial comment that is at least 3 chars long.',
+      });
+    assert.equal(createRes.status, 201);
+    review = createRes.body.data.review;
+
+    // 1. Unauthenticated edit attempt -> 401
+    const unauthEdit = await request(app)
+      .put(`/api/products/${product.id}/reviews/${review.id}`)
+      .send({ rating: 5, comment: 'Hacked comment' });
+    assert.equal(unauthEdit.status, 401);
+
+    // 2. Other user edit attempt -> 403 Forbidden
+    const forbiddenEdit = await request(app)
+      .put(`/api/products/${product.id}/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${otherToken}`)
+      .send({ rating: 5, comment: 'Unauthorized update attempt' });
+    assert.equal(forbiddenEdit.status, 403);
+    assert.match(forbiddenEdit.body.message, /only edit your own reviews/i);
+
+    // 3. Author edit attempt with invalid input -> 400
+    const invalidEdit = await request(app)
+      .put(`/api/products/${product.id}/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({ rating: 10, comment: 'Too high' });
+    assert.equal(invalidEdit.status, 400);
+
+    // 4. Author edit attempt -> 200 OK & updates product aggregate
+    const successfulEdit = await request(app)
+      .put(`/api/products/${product.id}/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({
+        rating: 5,
+        title: 'Updated Headline',
+        comment: 'Updated comment with much better feedback!',
+      });
+    assert.equal(successfulEdit.status, 200);
+    assert.equal(successfulEdit.body.success, true);
+    assert.equal(successfulEdit.body.data.review.rating, 5);
+    assert.equal(successfulEdit.body.data.review.comment, 'Updated comment with much better feedback!');
+    assert.equal(successfulEdit.body.data.review.title, 'Updated Headline');
+    assert.equal(successfulEdit.body.data.averageRating, 5);
+
+    // Also verify direct /api/reviews/:id works
+    const directEdit = await request(app)
+      .put(`/api/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({
+        rating: 4,
+        comment: 'Second updated comment via direct route',
+      });
+    assert.equal(directEdit.status, 200);
+    assert.equal(directEdit.body.data.review.rating, 4);
+    assert.equal(directEdit.body.data.averageRating, 4);
+  } finally {
+    if (product?.id) {
+      await prisma.reviewReply.deleteMany({ where: { review: { productId: product.id } } });
+      await prisma.review.deleteMany({ where: { productId: product.id } });
+      await prisma.product.delete({ where: { id: product.id } });
+    }
+    const userIds = [author?.id, otherUser?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+  }
+});
+
+test('33. User Review Management: Author can delete review with ownership check; non-author rejected with 403', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let author = null;
+  let otherUser = null;
+  let review = null;
+
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: `Test Del Prod ${timestamp}`,
+        slug: `test-del-prod-${timestamp}`,
+        sku: `SKU-DEL-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 18000,
+        image: 'https://example.com/del-mattress.jpg',
+        isActive: true,
+      },
+    });
+
+    author = await prisma.user.create({
+      data: {
+        firstName: 'Author',
+        lastName: 'Del',
+        email: `author_del_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    otherUser = await prisma.user.create({
+      data: {
+        firstName: 'Other',
+        lastName: 'Del',
+        email: `other_del_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const authorToken = jwt.sign(
+      { id: author.id, email: author.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const otherToken = jwt.sign(
+      { id: otherUser.id, email: otherUser.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Create review
+    const createRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .set('Authorization', `Bearer ${authorToken}`)
+      .send({
+        rating: 5,
+        title: 'Review to Delete',
+        comment: 'This review will be deleted soon.',
+      });
+    assert.equal(createRes.status, 201);
+    review = createRes.body.data.review;
+
+    // 1. Unauthenticated delete attempt -> 401
+    const unauthDel = await request(app)
+      .delete(`/api/products/${product.id}/reviews/${review.id}`);
+    assert.equal(unauthDel.status, 401);
+
+    // 2. Non-author delete attempt -> 403 Forbidden
+    const forbiddenDel = await request(app)
+      .delete(`/api/products/${product.id}/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${otherToken}`);
+    assert.equal(forbiddenDel.status, 403);
+    assert.match(forbiddenDel.body.message, /only delete your own reviews/i);
+
+    // 3. Author delete attempt -> 200 OK & recalculates product stats to 0
+    const authorDel = await request(app)
+      .delete(`/api/products/${product.id}/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${authorToken}`);
+    assert.equal(authorDel.status, 200);
+    assert.equal(authorDel.body.success, true);
+    assert.equal(authorDel.body.data.reviewCount, 0);
+    assert.equal(authorDel.body.data.averageRating, 0);
+
+    // Verify it is gone from database
+    const checkDb = await prisma.review.findUnique({ where: { id: review.id } });
+    assert.equal(checkDb, null);
+  } finally {
+    if (product?.id) {
+      await prisma.review.deleteMany({ where: { productId: product.id } });
+      await prisma.product.delete({ where: { id: product.id } });
+    }
+    const userIds = [author?.id, otherUser?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+  }
+});
+
+test('34. Public Nested Replies: Authenticated users can post replies; reviews include replies; cascade delete works', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let reviewer = null;
+  let replier = null;
+  let review = null;
+
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: `Test Reply Prod ${timestamp}`,
+        slug: `test-reply-prod-${timestamp}`,
+        sku: `SKU-REPLY-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 20000,
+        image: 'https://example.com/reply-mattress.jpg',
+        isActive: true,
+      },
+    });
+
+    reviewer = await prisma.user.create({
+      data: {
+        firstName: 'Reviewer',
+        lastName: 'One',
+        email: `rev_one_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    replier = await prisma.user.create({
+      data: {
+        firstName: 'Replier',
+        lastName: 'Two',
+        email: `rep_two_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const revToken = jwt.sign(
+      { id: reviewer.id, email: reviewer.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const repToken = jwt.sign(
+      { id: replier.id, email: replier.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Create a review
+    const createRev = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .set('Authorization', `Bearer ${revToken}`)
+      .send({
+        rating: 5,
+        title: 'Great Mattress',
+        comment: 'Loved the mattress, had the best sleep ever.',
+      });
+    assert.equal(createRev.status, 201);
+    review = createRev.body.data.review;
+
+    // 1. Unauthenticated reply attempt -> 401
+    const unauthReply = await request(app)
+      .post(`/api/products/${product.id}/reviews/${review.id}/replies`)
+      .send({ comment: 'Unauthenticated reply' });
+    assert.equal(unauthReply.status, 401);
+
+    // 2. Short comment -> 400
+    const shortReply = await request(app)
+      .post(`/api/products/${product.id}/reviews/${review.id}/replies`)
+      .set('Authorization', `Bearer ${repToken}`)
+      .send({ comment: ' ' });
+    assert.equal(shortReply.status, 400);
+
+    // 3. Valid reply by replier
+    const validReply = await request(app)
+      .post(`/api/products/${product.id}/reviews/${review.id}/replies`)
+      .set('Authorization', `Bearer ${repToken}`)
+      .send({ comment: 'I completely agree, the spinal support is top notch!' });
+    assert.equal(validReply.status, 201);
+    assert.equal(validReply.body.success, true);
+    assert.equal(validReply.body.data.reply.comment, 'I completely agree, the spinal support is top notch!');
+    assert.equal(validReply.body.data.reply.userName, 'Replier Two');
+
+    // 4. Fetch product reviews and verify reply is nested underneath review
+    const getRes = await request(app).get(`/api/products/${product.id}/reviews`);
+    assert.equal(getRes.status, 200);
+    assert.equal(getRes.body.data.reviews.length, 1);
+    assert.equal(getRes.body.data.reviews[0].replies.length, 1);
+    assert.equal(getRes.body.data.reviews[0].replies[0].comment, 'I completely agree, the spinal support is top notch!');
+
+    // 5. Delete parent review and verify cascade delete of reply
+    await request(app)
+      .delete(`/api/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${revToken}`);
+
+    const orphanedReplies = await prisma.reviewReply.findMany({ where: { reviewId: review.id } });
+    assert.equal(orphanedReplies.length, 0);
+  } finally {
+    if (product?.id) {
+      await prisma.reviewReply.deleteMany({ where: { review: { productId: product.id } } });
+      await prisma.review.deleteMany({ where: { productId: product.id } });
+      await prisma.product.delete({ where: { id: product.id } });
+    }
+    const userIds = [reviewer?.id, replier?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+  }
+});
+
+test('35. Admin Review Management: Admin can view all platform reviews with search/filters & delete any review', async () => {
+  const timestamp = Date.now();
+  let product = null;
+  let admin = null;
+  let regularUser = null;
+  let review = null;
+
+  try {
+    product = await prisma.product.create({
+      data: {
+        name: `Admin Mod Prod ${timestamp}`,
+        slug: `admin-mod-prod-${timestamp}`,
+        sku: `SKU-ADM-MOD-${timestamp}`,
+        productType: 'MATTRESS',
+        price: 25000,
+        image: 'https://example.com/admin-mattress.jpg',
+        isActive: true,
+      },
+    });
+
+    admin = await prisma.user.create({
+      data: {
+        firstName: 'Admin',
+        lastName: 'Moderator',
+        email: `admin_mod_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+
+    regularUser = await prisma.user.create({
+      data: {
+        firstName: 'Customer',
+        lastName: 'Jones',
+        email: `cust_${timestamp}@somnera.test`,
+        password: 'hashedpassword',
+        role: 'USER',
+        status: 'ACTIVE',
+      },
+    });
+
+    const adminToken = jwt.sign(
+      { id: admin.id, email: admin.email, role: 'ADMIN' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const userToken = jwt.sign(
+      { id: regularUser.id, email: regularUser.email, role: 'USER' },
+      env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Customer creates review
+    const revRes = await request(app)
+      .post(`/api/products/${product.id}/reviews`)
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        rating: 2,
+        title: 'Spam or Inappropriate Review',
+        comment: 'This is an inappropriate or negative review that needs admin moderation.',
+      });
+    assert.equal(revRes.status, 201);
+    review = revRes.body.data.review;
+
+    // 1. Regular user cannot access /api/admin/reviews -> 403 Forbidden
+    const userAccess = await request(app)
+      .get('/api/admin/reviews')
+      .set('Authorization', `Bearer ${userToken}`);
+    assert.equal(userAccess.status, 403);
+
+    // 2. Admin can access /api/admin/reviews -> 200 OK with reviews list
+    const adminGet = await request(app)
+      .get('/api/admin/reviews')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminGet.status, 200);
+    assert.equal(adminGet.body.success, true);
+    assert.ok(Array.isArray(adminGet.body.data.reviews));
+
+    // 3. Admin search filter by keyword
+    const searchRes = await request(app)
+      .get(`/api/admin/reviews?search=inappropriate`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(searchRes.status, 200);
+    assert.ok(searchRes.body.data.reviews.some((r) => r.id === review.id));
+
+    // 4. Admin search filter by rating
+    const ratingRes = await request(app)
+      .get(`/api/admin/reviews?rating=2`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(ratingRes.status, 200);
+    assert.ok(ratingRes.body.data.reviews.some((r) => r.id === review.id));
+
+    // 5. Admin can delete the customer's review regardless of ownership
+    const adminDel = await request(app)
+      .delete(`/api/admin/reviews/${review.id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminDel.status, 200);
+    assert.equal(adminDel.body.success, true);
+
+    const checkDel = await prisma.review.findUnique({ where: { id: review.id } });
+    assert.equal(checkDel, null);
+  } finally {
+    if (product?.id) {
+      await prisma.review.deleteMany({ where: { productId: product.id } });
+      await prisma.product.delete({ where: { id: product.id } });
+    }
+    const userIds = [admin?.id, regularUser?.id].filter(Boolean);
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    }
+  }
+});
+
 
