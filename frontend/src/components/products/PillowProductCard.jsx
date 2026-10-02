@@ -1,4 +1,6 @@
 import { getMinProductPrice } from '../../utils/productFilterUtils';
+import { useAuth } from '../Account';
+import useWishlistStatus from '../../hooks/useWishlistStatus';
 
 function formatPrice(value) {
   if (
@@ -22,6 +24,56 @@ export function PillowProductCard({
   compact = false,
   addToCart,
 }) {
+  const {
+    isLoggedIn,
+    openAuthModal,
+    showToast,
+  } = useAuth();
+
+  const {
+    inWishlist,
+    wishlistLoading,
+    toggleWishlist,
+  } = useWishlistStatus({
+    productId: product.id,
+    isLoggedIn,
+    openAuthModal,
+  });
+
+  const handleWishlistToggle = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (wishlistLoading) {
+      return;
+    }
+
+    try {
+      const nextState = await toggleWishlist();
+      if (showToast && isLoggedIn) {
+        showToast(
+          nextState
+            ? `${product.name} added to your wishlist!`
+            : `${product.name} removed from your wishlist.`
+        );
+      }
+    } catch (error) {
+      console.error('Wishlist update failed:', error);
+    }
+  };
+
+  const handleProductNavigation = (event) => {
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+      return;
+    }
+    event.preventDefault();
+    window.location.hash = `product/${product.id}`;
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   const effectivePriceVal =
     Number(product.price) > 0
       ? Number(product.price)
@@ -56,43 +108,69 @@ export function PillowProductCard({
         }`
       }
     >
-      <button
-        type="button"
-        className="pillow-product-card__image"
-        onClick={
-          () => {
-            window.location.hash =
-              `product/${product.id}`;
-            window.scrollTo({
-              top: 0,
-              behavior: 'smooth',
-            });
+      <div className="pillow-product-card__image">
+        <a
+          href={`#product/${product.id}`}
+          className="pillow-product-card__image-link"
+          onClick={handleProductNavigation}
+          aria-label={`View details for ${product.name}`}
+        >
+          {
+            product.image
+              ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  loading="lazy"
+                />
+              )
+              : (
+                <span className="pillow-product-card__placeholder">
+                  Image coming soon
+                </span>
+              )
           }
-        }
-        aria-label={`View ${product.name}`}
-      >
-        {
-          product.image
-            ? (
-              <img
-                src={product.image}
-                alt={product.name}
-                loading="lazy"
-              />
-            )
-            : (
-              <span className="pillow-product-card__placeholder">
-                Image coming soon
-              </span>
-            )
-        }
 
-        {
-          discount > 0 && (
-            <b>{discount}% off</b>
-          )
-        }
-      </button>
+          {
+            discount > 0 && (
+              <b>{discount}% off</b>
+            )
+          }
+        </a>
+
+        {/* Wishlist Button Overlay */}
+        <button
+          type="button"
+          className={`pillow-wishlist-btn ${inWishlist ? 'is-active' : ''}`}
+          onClick={handleWishlistToggle}
+          disabled={wishlistLoading}
+          title={
+            wishlistLoading
+              ? 'Updating Wishlist...'
+              : inWishlist
+                ? 'Remove from Wishlist'
+                : 'Add to Wishlist'
+          }
+          aria-label={
+            inWishlist
+              ? `Remove ${product.name} from Wishlist`
+              : `Add ${product.name} to Wishlist`
+          }
+          aria-busy={wishlistLoading}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill={inWishlist ? '#ef4444' : 'none'}
+            stroke={inWishlist ? '#ef4444' : '#241132'}
+            strokeWidth="2.2"
+            aria-hidden="true"
+          >
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </button>
+      </div>
 
       <div className="pillow-product-card__body">
         <p>
@@ -105,7 +183,15 @@ export function PillowProductCard({
           }
         </p>
 
-        <h3>{product.name}</h3>
+        <h3>
+          <a
+            href={`#product/${product.id}`}
+            onClick={handleProductNavigation}
+            className="pillow-product-card__title-link"
+          >
+            {product.name}
+          </a>
+        </h3>
 
         <span className="pillow-product-card__pack">
           {packSize === 2 ? 'Pair of 2 pillows' : 'Single pillow'}

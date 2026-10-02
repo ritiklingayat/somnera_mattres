@@ -43,11 +43,42 @@ export default function ProductModal({ product, onClose }) {
           ×
         </button>
         <div className="modal-image">
-          <img src={product?.image} alt={product?.name} />
+          <a
+            href={product?.id ? `#product/${product.id}` : '#'}
+            onClick={(e) => {
+              if (product?.id) {
+                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                e.preventDefault();
+                onClose();
+                window.location.hash = `product/${product.id}`;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            aria-label={`View full details for ${product?.name}`}
+            style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer', textDecoration: 'none' }}
+          >
+            <img src={product?.image} alt={product?.name} style={{ cursor: 'pointer' }} />
+          </a>
         </div>
         <div className="modal-content">
           <p className="modal-kicker">{product?.eyebrow}</p>
-          <h2>{product?.name}</h2>
+          <h2>
+            <a
+              href={product?.id ? `#product/${product.id}` : '#'}
+              onClick={(e) => {
+                if (product?.id) {
+                  if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                  e.preventDefault();
+                  onClose();
+                  window.location.hash = `product/${product.id}`;
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+            >
+              {product?.name}
+            </a>
+          </h2>
           <p className="modal-description">{product?.description}</p>
           <div className="modal-stats">
             <span>

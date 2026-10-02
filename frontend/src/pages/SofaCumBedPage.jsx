@@ -19,7 +19,7 @@ const FEATURES = [
   },
 ];
 
-export function SofaCumBedPage({ products = [] }) {
+export function SofaCumBedPage({ products = [], addToCart }) {
   return (
     <div className="sofa-cum-bed-page">
       <section className="category-hero" style={{ background: '#002b49', color: '#ffffff', padding: '60px 0', textAlign: 'center' }}>

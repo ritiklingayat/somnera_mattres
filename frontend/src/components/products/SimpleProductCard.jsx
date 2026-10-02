@@ -22,6 +22,7 @@ function SimpleProductCard({
   const {
     isLoggedIn,
     openAuthModal,
+    showToast,
   } = useAuth();
 
 
@@ -56,13 +57,24 @@ function SimpleProductCard({
   const handleWishlistToggle =
     async (event) => {
 
+      event.preventDefault();
       event.stopPropagation();
 
+      if (wishlistLoading) {
+        return;
+      }
 
       try {
 
-        await toggleWishlist();
+        const nextState = await toggleWishlist();
 
+        if (showToast && isLoggedIn) {
+          showToast(
+            nextState
+              ? `${product.name} added to your wishlist!`
+              : `${product.name} removed from your wishlist.`
+          );
+        }
 
       } catch (error) {
 
@@ -286,31 +298,49 @@ function SimpleProductCard({
         }}
       >
 
-        <img
-          src={
-            product.image
-          }
-          alt={
-            product.name
-          }
+        <a
+          href={`#product/${product.id}`}
+          onClick={handleEyeClick}
+          className="simple-product-card__image-link"
+          aria-label={`View details for ${product.name}`}
           style={{
-            position:
-              'absolute',
-
-            inset:
-              0,
-
-            width:
-              '100%',
-
-            height:
-              '100%',
-
-            objectFit:
-              'contain',
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            cursor: 'pointer',
           }}
-          loading="lazy"
-        />
+        >
+          <img
+            src={
+              product.image
+            }
+            alt={
+              product.name
+            }
+            style={{
+              position:
+                'absolute',
+
+              inset:
+                0,
+
+              width:
+                '100%',
+
+              height:
+                '100%',
+
+              objectFit:
+                'contain',
+
+              cursor:
+                'pointer',
+            }}
+            loading="lazy"
+          />
+        </a>
 
 
         {
@@ -602,9 +632,19 @@ function SimpleProductCard({
               0,
           }}
         >
-          {
-            product.name
-          }
+          <a
+            href={`#product/${product.id}`}
+            onClick={handleEyeClick}
+            style={{
+              color: 'inherit',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {
+              product.name
+            }
+          </a>
         </h3>
 
 

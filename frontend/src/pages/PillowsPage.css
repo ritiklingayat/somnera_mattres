@@ -201,7 +201,16 @@
   overflow: hidden;
   border: 0;
   background: linear-gradient(145deg, #f7f3fa, #f0edf3);
+}
+
+.pillow-product-card__image-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .pillow-product-card__image img {
@@ -210,6 +219,7 @@
   object-fit: contain;
   object-position: center;
   transition: transform 0.35s ease;
+  cursor: pointer;
 }
 
 .pillow-product-card:hover .pillow-product-card__image img {
@@ -226,6 +236,53 @@
   color: #fff;
   font-size: 0.66rem;
   text-transform: uppercase;
+  z-index: 2;
+}
+
+.pillow-wishlist-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #241132;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  z-index: 5;
+  padding: 0;
+}
+
+.pillow-wishlist-btn:hover {
+  transform: scale(1.08);
+  background: #ffffff;
+}
+
+.pillow-wishlist-btn.is-active {
+  color: #ef4444;
+}
+
+.pillow-wishlist-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.pillow-product-card__title-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.pillow-product-card__title-link:hover {
+  color: #843eb8;
 }
 
 .pillow-product-card__placeholder {

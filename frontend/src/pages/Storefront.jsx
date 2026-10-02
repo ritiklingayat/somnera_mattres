@@ -167,10 +167,24 @@ function ProductCard({
         }
 
 
-        <img
-          src={product.image}
-          alt={product.name}
-        />
+        <a
+          href={`#product/${product.id}`}
+          onClick={(e) => {
+            if (e.ctrlKey || e.metaKey || e.button === 1) return;
+            e.preventDefault();
+            window.location.hash = `product/${product.id}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="storefront-product-image-link"
+          aria-label={`View details for ${product.name}`}
+          style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer', textDecoration: 'none' }}
+        >
+          <img
+            src={product.image}
+            alt={product.name}
+            style={{ cursor: 'pointer' }}
+          />
+        </a>
 
       </div>
 
@@ -197,7 +211,18 @@ function ProductCard({
 
 
         <h2>
-          {product.name}
+          <a
+            href={`#product/${product.id}`}
+            onClick={(e) => {
+              if (e.ctrlKey || e.metaKey || e.button === 1) return;
+              e.preventDefault();
+              window.location.hash = `product/${product.id}`;
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+          >
+            {product.name}
+          </a>
         </h2>
 
 

@@ -120,12 +120,27 @@
   overflow: hidden;
 }
 
+.wishlist-card-image-link {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: pointer;
+}
+
 .wishlist-card-image-wrap img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.35s ease;
+}
+
+.wishlist-card:hover .wishlist-card-image-wrap img {
+  transform: scale(1.04);
 }
 
 .wishlist-badge {
@@ -138,6 +153,7 @@
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 6px;
+  z-index: 2;
 }
 
 .wishlist-remove-btn {
@@ -156,12 +172,14 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  z-index: 3;
 }
 
 .wishlist-remove-btn:hover {
   background: #ef4444;
   color: #ffffff;
   border-color: #ef4444;
+  transform: scale(1.08);
 }
 
 .wishlist-card-content {

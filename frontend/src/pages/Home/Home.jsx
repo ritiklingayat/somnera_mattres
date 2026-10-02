@@ -37,6 +37,7 @@ function Card({ product, onBrowse, onAddToCart, compact = false }) {
   const {
   isLoggedIn,
   openAuthModal,
+  showToast,
 } = useAuth();
 
 
@@ -56,13 +57,23 @@ function Card({ product, onBrowse, onAddToCart, compact = false }) {
   const handleWishlistToggle =
   async (event) => {
 
+    event.preventDefault();
     event.stopPropagation();
 
+    if (wishlistLoading) {
+      return;
+    }
 
     try {
 
-      await toggleWishlist();
-
+      const nextState = await toggleWishlist();
+      if (showToast && isLoggedIn) {
+        showToast(
+          nextState
+            ? `${product.name} added to your wishlist!`
+            : `${product.name} removed from your wishlist.`
+        );
+      }
 
     } catch (error) {
 
@@ -73,18 +84,38 @@ function Card({ product, onBrowse, onAddToCart, compact = false }) {
     }
   };
 
+  const handleProductNavigation = (event) => {
+    if (event.ctrlKey || event.metaKey || event.button === 1) {
+      return;
+    }
+    event.preventDefault();
+    window.location.hash = `product/${product.id}`;
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   const rate = Math.min(...Object.values(product.prices || { 0: 0 }));
   const price = getPrice(product, '72x60', Object.keys(product.prices || {})[0]);
   return (
     <article className={`sleep-card ${compact ? 'sleep-card-compact' : ''}`}>
       <div className="sleep-card-image">
-        <img src={product.image} alt={`${product.name} mattress`} />
+        <a
+          href={`#product/${product.id}`}
+          onClick={handleProductNavigation}
+          className="sleep-card-image-link"
+          aria-label={`View details for ${product.name}`}
+        >
+          <img src={product.image} alt={`${product.name} mattress`} />
+        </a>
         {product.badge && <span>{product.badge}</span>}
         <button
+          type="button"
           aria-label={`Save ${product.name}`}
           className={`heart ${inWishlist ? 'active' : ''}`}
           onClick={handleWishlistToggle}
-           disabled={ wishlistLoading}
+          disabled={wishlistLoading}
           style={{ color: inWishlist ? '#ef4444' : 'inherit' }}
         >
           {inWishlist ? '♥' : '♡'}
@@ -92,7 +123,15 @@ function Card({ product, onBrowse, onAddToCart, compact = false }) {
       </div>
       <div className="sleep-card-copy">
         <p>{product.category || product.eyebrow}</p>
-        <h3>{product.name}</h3>
+        <h3>
+          <a
+            href={`#product/${product.id}`}
+            onClick={handleProductNavigation}
+            style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+          >
+            {product.name}
+          </a>
+        </h3>
         <div className="rating">&#9733; 4.8 <small>| Loved by better sleepers</small></div>
         <div className="price">
           <strong>&#8377;{price.toLocaleString('en-IN')}</strong>

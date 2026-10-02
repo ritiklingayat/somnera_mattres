@@ -30,7 +30,20 @@ export function ProductQuickViewModal({ product, isOpen, onClose, addToCart }) {
 
         <div className="quickview-grid">
           <div className="quickview-image-col">
-            <img src={product.image} alt={product.name} />
+            <a
+              href={`#product/${product.id}`}
+              onClick={(e) => {
+                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                e.preventDefault();
+                onClose();
+                window.location.hash = `product/${product.id}`;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              aria-label={`View details for ${product.name}`}
+              style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer', textDecoration: 'none' }}
+            >
+              <img src={product.image} alt={product.name} style={{ cursor: 'pointer' }} />
+            </a>
             {product.badge && <span className="quickview-badge">{product.badge}</span>}
           </div>
 
@@ -38,7 +51,21 @@ export function ProductQuickViewModal({ product, isOpen, onClose, addToCart }) {
             <span className="quickview-eyebrow">
               {product.category} • {product.eyebrow}
             </span>
-            <h2 className="quickview-title">{product.name}</h2>
+            <h2 className="quickview-title">
+              <a
+                href={`#product/${product.id}`}
+                onClick={(e) => {
+                  if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                  e.preventDefault();
+                  onClose();
+                  window.location.hash = `product/${product.id}`;
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+              >
+                {product.name}
+              </a>
+            </h2>
 
             <div className="quickview-rating">
               <span>★★★★★</span>

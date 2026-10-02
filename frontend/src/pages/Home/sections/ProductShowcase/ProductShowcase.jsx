@@ -23,12 +23,46 @@ export default function ProductShowcase({ products = seedProducts, onSelectProdu
           {displayProducts.map((product, index) => (
             <article className={`product-card product-${index}`} key={product.id}>
               <div className="product-image">
-                <img src={product.image} alt={`${product.name} mattress`} />
+                <a
+                  href={`#product/${product.id}`}
+                  onClick={(e) => {
+                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                    e.preventDefault();
+                    if (typeof onSelectProduct === 'function') {
+                      onSelectProduct(product);
+                    } else {
+                      window.location.hash = `product/${product.id}`;
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="product-showcase-image-link"
+                  aria-label={`View details for ${product.name}`}
+                  style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer', textDecoration: 'none' }}
+                >
+                  <img src={product.image} alt={`${product.name} mattress`} style={{ cursor: 'pointer' }} />
+                </a>
                 {product.badge && <span>{product.badge}</span>}
               </div>
               <div className="product-content">
                 <p>{product.category || product.eyebrow}</p>
-                <h3>{product.name}</h3>
+                <h3>
+                  <a
+                    href={`#product/${product.id}`}
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                      e.preventDefault();
+                      if (typeof onSelectProduct === 'function') {
+                        onSelectProduct(product);
+                      } else {
+                        window.location.hash = `product/${product.id}`;
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+                  >
+                    {product.name}
+                  </a>
+                </h3>
                 <div className="product-meta">
                   <span>{product.firmness}</span>
                   <i></i>

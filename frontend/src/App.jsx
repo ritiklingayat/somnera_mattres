@@ -1144,6 +1144,9 @@ if (
 
       <PillowsPage
         products={catalog}
+        addToCart={
+          handleAddToCart
+        }
       />
     );
 

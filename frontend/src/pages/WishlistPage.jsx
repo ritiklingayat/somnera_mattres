@@ -435,14 +435,27 @@ export function WishlistPage({
 
                             <div className="wishlist-card-image-wrap">
 
-                              <img
-                                src={
-                                  product.image
-                                }
-                                alt={
-                                  product.name
-                                }
-                              />
+                              <a
+                                href={`#product/${product.id}`}
+                                onClick={(e) => {
+                                  if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                                  e.preventDefault();
+                                  handleNav(
+                                    `product/${product.id}`,
+                                  );
+                                }}
+                                className="wishlist-card-image-link"
+                                aria-label={`View details for ${product.name}`}
+                              >
+                                <img
+                                  src={
+                                    product.image
+                                  }
+                                  alt={
+                                    product.name
+                                  }
+                                />
+                              </a>
 
 
                               {
@@ -500,9 +513,25 @@ export function WishlistPage({
 
 
                               <h3 className="wishlist-title">
-                                {
-                                  product.name
-                                }
+                                <a
+                                  href={`#product/${product.id}`}
+                                  onClick={(e) => {
+                                    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                                    e.preventDefault();
+                                    handleNav(
+                                      `product/${product.id}`,
+                                    );
+                                  }}
+                                  style={{
+                                    color: 'inherit',
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {
+                                    product.name
+                                  }
+                                </a>
                               </h3>
 
 

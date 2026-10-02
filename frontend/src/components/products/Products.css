@@ -256,11 +256,20 @@
   background: #f8fafc;
 }
 
+.card-image-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  text-decoration: none;
+}
+
 .card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.4s ease;
+  cursor: pointer;
 }
 
 .somnera-product-card:hover .card-image {

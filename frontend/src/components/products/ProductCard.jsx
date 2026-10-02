@@ -39,6 +39,7 @@ export function ProductCard({
   const {
     isLoggedIn,
     openAuthModal,
+    showToast,
   } = useAuth();
 
 
@@ -113,7 +114,14 @@ export function ProductCard({
 
       try {
 
-        await toggleWishlist();
+        const nextState = await toggleWishlist();
+        if (showToast && isLoggedIn) {
+          showToast(
+            nextState
+              ? `${product.name} added to your wishlist!`
+              : `${product.name} removed from your wishlist.`
+          );
+        }
 
       } catch (error) {
 
@@ -300,16 +308,23 @@ export function ProductCard({
         }
 
 
-        <img
-          src={
-            product.image
-          }
-          alt={
-            product.name
-          }
-          className="card-image"
-          loading="lazy"
-        />
+        <Link
+          to={`/#product/${product.id}`}
+          onClick={handleEyeClick}
+          className="card-image-link"
+          aria-label={`View details for ${product.name}`}
+        >
+          <img
+            src={
+              product.image
+            }
+            alt={
+              product.name
+            }
+            className="card-image"
+            loading="lazy"
+          />
+        </Link>
 
 
         {/* ==================================================

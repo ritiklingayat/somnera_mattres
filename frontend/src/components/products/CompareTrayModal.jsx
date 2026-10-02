@@ -56,8 +56,35 @@ export function CompareTrayModal({ comparedProducts = [], onRemove, onClearAll, 
                     {comparedProducts.map((p) => (
                       <th key={p.id}>
                         <div className="compare-head-item">
-                          <img src={p.image} alt={p.name} />
-                          <h3>{p.name}</h3>
+                          <a
+                            href={`#product/${p.id}`}
+                            onClick={(e) => {
+                              if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                              e.preventDefault();
+                              onClose();
+                              window.location.hash = `product/${p.id}`;
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            aria-label={`View details for ${p.name}`}
+                            style={{ display: 'block', cursor: 'pointer', textDecoration: 'none' }}
+                          >
+                            <img src={p.image} alt={p.name} style={{ cursor: 'pointer' }} />
+                          </a>
+                          <h3>
+                            <a
+                              href={`#product/${p.id}`}
+                              onClick={(e) => {
+                                if (e.ctrlKey || e.metaKey || e.button === 1) return;
+                                e.preventDefault();
+                                onClose();
+                                window.location.hash = `product/${p.id}`;
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+                            >
+                              {p.name}
+                            </a>
+                          </h3>
                           <button
                             type="button"
                             className="compare-table-remove"
